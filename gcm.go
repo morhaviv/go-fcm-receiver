@@ -1,6 +1,8 @@
 package go_fcm_receiver
 
-import "time"
+import (
+	"time"
+)
 
 func (f *FCMClient) RegisterGCM() error {
 	err := f.checkInRequest()
@@ -36,6 +38,6 @@ func (f *FCMClient) registerRequest() error {
 		token, err = f.SendRegisterRequest()
 		time.Sleep(time.Second)
 	}
-	f.Token = token
+	f.GcmToken = token
 	return nil
 }

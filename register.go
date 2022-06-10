@@ -5,6 +5,10 @@ func (f *FCMClient) Register() error {
 	if err != nil {
 		return err
 	}
+	err = f.RegisterFCM()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

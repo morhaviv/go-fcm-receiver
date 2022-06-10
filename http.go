@@ -3,6 +3,7 @@ package go_fcm_receiver
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"github.com/golang/protobuf/proto"
 	pb "go-fcm-receiver/proto"
@@ -57,6 +58,7 @@ func (f *FCMClient) SendCheckInRequest(requestBody *pb.AndroidCheckinRequest) (*
 }
 
 func (f *FCMClient) SendRegisterRequest() (string, error) {
+	// Todo: Move url.values generation to a different function (Like CheckInRequest)
 	values := url.Values{}
 	values.Add("app", "org.chromium.linux")
 	values.Add("X-subtype", f.AppId)
@@ -99,4 +101,54 @@ func (f *FCMClient) SendRegisterRequest() (string, error) {
 	}
 
 	return respValues.Get("token"), nil
+}
+
+func (f *FCMClient) SendSubscribeRequest() (*FCMSubscribeResponse, error) {
+	// Todo: Move url.values generation to a different function (Like CheckInRequest)
+	publicKey := f.publicKey
+	publicKey = strings.ReplaceAll(publicKey, "=", "")
+	publicKey = strings.ReplaceAll(publicKey, "+", "")
+	publicKey = strings.ReplaceAll(publicKey, "/", "")
+
+	authSecret := f.authSecret
+	authSecret = strings.ReplaceAll(authSecret, "=", "")
+	authSecret = strings.ReplaceAll(authSecret, "+", "")
+	authSecret = strings.ReplaceAll(authSecret, "/", "")
+
+	values := url.Values{}
+	values.Add("authorized_entity", strconv.FormatInt(f.SenderId, 10))
+	values.Add("endpoint", FcmEndpointUrl+"/"+f.GcmToken)
+	values.Add("encryption_key", publicKey)
+	values.Add("encryption_auth", authSecret)
+
+	req, err := http.NewRequest("POST", FcmSubscribeUrl, strings.NewReader(values.Encode()))
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("User-Agent", "")
+
+	resp, err := f.HttpClient.Do(req)
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	result, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
+
+	var response FCMSubscribeResponse
+	err = json.Unmarshal(result, &response)
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
+
+	return &response, nil
 }

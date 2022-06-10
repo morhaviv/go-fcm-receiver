@@ -12,9 +12,13 @@ type FCMClient struct {
 	SenderId      int64
 	HttpClient    *http.Client
 	AppId         string
-	Token         string
+	GcmToken      string
+	FcmToken      string
 	androidId     uint64
 	securityToken uint64
+	privateKey    string
+	publicKey     string
+	authSecret    string
 }
 
 func (f *FCMClient) CreateAppId() string {
@@ -44,4 +48,9 @@ func CreateCheckInRequest(androidId *int64, securityToken *uint64, chromeVersion
 		UserSerialNumber: &userSerialNumber,
 	}
 
+}
+
+type FCMSubscribeResponse struct {
+	Token   string `json:"token"`
+	PushSet string `json:"pushSet"`
 }
