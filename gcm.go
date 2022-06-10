@@ -1,24 +1,41 @@
 package go_fcm_receiver
 
-import (
-	"fmt"
-	"strconv"
-)
+import "time"
 
-func (f *FCMClient) RegisterGCM() {
-	f.checkInRequest(nil, nil)
+func (f *FCMClient) RegisterGCM() error {
+	err := f.checkInRequest()
+	if err != nil {
+		return err
+	}
+
+	err = f.registerRequest()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (f *FCMClient) checkInRequest(androidId *int64, securityToken *uint64) error {
-	checkInRequest := CreateCheckInRequest(androidId, securityToken, "")
+func (f *FCMClient) checkInRequest() error {
+	androidId := int64(f.androidId)
+	checkInRequest := CreateCheckInRequest(&androidId, &f.securityToken, "")
 	responsePb, err := f.SendCheckInRequest(checkInRequest)
 	if err != nil {
 		return err
 	}
-	fmt.Println(responsePb)
-	fmt.Println(*responsePb.AndroidId)
-	fmt.Println(*responsePb.SecurityToken)
-	fmt.Println(*responsePb.VersionInfo)
-	fmt.Println(string(strconv.FormatUint(responsePb.GetAndroidId(), 10)))
+
+	f.androidId = *responsePb.AndroidId
+	f.securityToken = *responsePb.SecurityToken
+
+	return nil
+}
+
+func (f *FCMClient) registerRequest() error {
+	token, err := f.SendRegisterRequest()
+	for err != nil {
+		token, err = f.SendRegisterRequest()
+		time.Sleep(time.Second)
+	}
+	f.Token = token
 	return nil
 }

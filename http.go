@@ -2,17 +2,22 @@ package go_fcm_receiver
 
 import (
 	"bytes"
+	"encoding/base64"
+	"errors"
 	"github.com/golang/protobuf/proto"
 	pb "go-fcm-receiver/proto"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 )
 
 func (f *FCMClient) SendCheckInRequest(requestBody *pb.AndroidCheckinRequest) (*pb.AndroidCheckinResponse, error) {
 	data, err := proto.Marshal(requestBody)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return nil, err
 
 	}
@@ -21,7 +26,7 @@ func (f *FCMClient) SendCheckInRequest(requestBody *pb.AndroidCheckinRequest) (*
 
 	req, err := http.NewRequest("POST", CheckInUrl, buff)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return nil, err
 	}
 
@@ -30,23 +35,68 @@ func (f *FCMClient) SendCheckInRequest(requestBody *pb.AndroidCheckinRequest) (*
 
 	resp, err := f.HttpClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	result, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return nil, err
 	}
 
 	var responsePb pb.AndroidCheckinResponse
 	err = proto.Unmarshal(result, &responsePb)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 		return nil, err
 	}
 
 	return &responsePb, nil
+}
+
+func (f *FCMClient) SendRegisterRequest() (string, error) {
+	values := url.Values{}
+	values.Add("app", "org.chromium.linux")
+	values.Add("X-subtype", f.AppId)
+	values.Add("device", strconv.FormatUint(f.androidId, 10))
+	values.Add("sender", base64.RawURLEncoding.EncodeToString(FcmServerKey))
+
+	req, err := http.NewRequest("POST", RegisterUrl, strings.NewReader(values.Encode()))
+	if err != nil {
+		log.Print(err)
+		return "", err
+	}
+
+	req.Header.Add("Authorization", "AidLogin "+strconv.FormatUint(f.androidId, 10)+":"+strconv.FormatUint(f.securityToken, 10))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("User-Agent", "")
+
+	resp, err := f.HttpClient.Do(req)
+	if err != nil {
+		log.Print(err)
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	result, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Print(err)
+		return "", err
+	}
+
+	respValues, err := url.ParseQuery(string(result))
+	if err != nil {
+		log.Print(err)
+		return "", err
+	}
+
+	if respValues.Get("Error") != "" {
+		err = errors.New(respValues.Get("Error"))
+		log.Print(err)
+		return "", err
+	}
+
+	return respValues.Get("token"), nil
 }

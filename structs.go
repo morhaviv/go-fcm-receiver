@@ -1,12 +1,25 @@
 package go_fcm_receiver
 
-import "net/http"
-import pb "go-fcm-receiver/proto"
+import (
+	"fmt"
+	"github.com/google/uuid"
+	pb "go-fcm-receiver/proto"
+	"net/http"
+)
 
 // FCMClient structure
 type FCMClient struct {
-	SenderId   int64
-	HttpClient *http.Client
+	SenderId      int64
+	HttpClient    *http.Client
+	AppId         string
+	Token         string
+	androidId     uint64
+	securityToken uint64
+}
+
+func (f *FCMClient) CreateAppId() string {
+	f.AppId = fmt.Sprintf(AppIdBase, uuid.New().String())
+	return f.AppId
 }
 
 func CreateCheckInRequest(androidId *int64, securityToken *uint64, chromeVersion string) *pb.AndroidCheckinRequest {
