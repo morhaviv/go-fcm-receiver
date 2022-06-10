@@ -3,6 +3,9 @@ package go_fcm_receiver
 const CheckInUrl = "https://android.clients.google.com/checkin"
 const RegisterUrl = "https://android.clients.google.com/c2dm/register3"
 
+const FcmSubscribeUrl = "https://fcm.googleapis.com/fcm/connect/subscribe"
+const FcmEndpointUrl = "https://fcm.googleapis.com/fcm/send"
+
 //const CheckInUrl = "http://127.0.0.1:8000/checkin"
 const AppIdBase = "wp:receiver.push.com#$%s"
 
