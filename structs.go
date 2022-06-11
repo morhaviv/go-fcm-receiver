@@ -34,6 +34,7 @@ func (f *FCMClient) CreateAppId() string {
 }
 
 func CreateCheckInRequest(androidId *int64, securityToken *uint64, chromeVersion string) *pb.AndroidCheckinRequest {
+	// Todo: Consider moving to proto/builder.go
 	// Todo: Do something about this shit
 	chromeVersion = "63.0.3234.0" // Todo: Delete
 	userSerialNumber := int32(0)
@@ -63,6 +64,7 @@ type FCMSubscribeResponse struct {
 }
 
 func CreateLoginRequestRaw(androidId *uint64, securityToken *uint64, chromeVersion string, persistentIds []string) []byte {
+	// Todo: Consider moving to proto/builder.go
 	// Todo: Do something about this shit
 	chromeVersion = "chrome-63.0.3234.0" // Todo: Delete
 	domain := "mcs.android.com"

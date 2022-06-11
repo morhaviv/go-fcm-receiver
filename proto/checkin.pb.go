@@ -10,7 +10,7 @@
 // 	protoc        v3.21.1
 // source: checkin.proto
 
-package __
+package proto
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

@@ -148,30 +148,34 @@ func (f *FCMSocketHandler) onGotMessageSize() error {
 }
 
 func (f *FCMSocketHandler) onGotMessageBytes() error {
-	//const protobuf = this._buildProtobufFromTag(this._messageTag);
-	//if (!protobuf) {
-	//	this._emitError(new Error('Unknown tag'));
-	//	return;
-	//}
-	//
+	protobuf := f.buildProtobufFromTag(f.data[:f.messageSize])
+	if protobuf == nil {
+		err := errors.New("Unknown message tag " + strconv.Itoa(f.messageTag))
+		return err
+	}
+
 	//// Messages with no content are valid; just use the default protobuf for
 	//// that tag.
-	//if f.messageSize == 0 {
-	//	// Todo: DO
-	//	//this.emit('message', {tag: this._messageTag, object: {}});
-	//	f.getNextMessage()
-	//	return nil
-	//}
+	if f.messageSize == 0 {
+		// Todo: DO
+		//this.emit('message', {tag: this._messageTag, object: {}});
+		err := f.getNextMessage()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 	//
-	//if len(f.data) < f.messageSize {
-	//	f.state = MCS_PROTO_BYTES
-	//	f.waitForData();
-	//	return nil
-	//}
+	if len(f.data) < f.messageSize {
+		f.state = MCS_PROTO_BYTES
+		err := f.waitForData()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 	//
-	//buffer := f.data[:f.messageSize]
-	//f.data = f.data[f.messageSize:]
-	//const message = protobuf.decode(buffer);
+	f.data = f.data[f.messageSize:]
 	//const object = protobuf.toObject(message, {
 	//longs : String,
 	//	enums : String,
@@ -180,17 +184,59 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 	//
 	//this.emit('message', {tag: this._messageTag, object: object});
 	//
-	//if (this._messageTag === kLoginResponseTag) {
-	//	if (this._handshakeComplete) {
-	//		console.error('Unexpected login response');
-	//	} else {
-	//		this._handshakeComplete = true;
-	//		console.log('GCM Handshake complete.');
-	//	}
-	//}
-	//
-	//this._getNextMessage();
+	if f.messageTag == kLoginResponseTag {
+		if !f.handshakeComplete {
+			f.handshakeComplete = true
+		}
+	}
+
+	err := f.getNextMessage()
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func (f *FCMSocketHandler) getNextMessage() error {
+	f.messageTag = 0
+	f.messageSize = 0
+	f.state = MCS_TAG_AND_SIZE
+	err := f.waitForData()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (f *FCMSocketHandler) buildProtobufFromTag(buffer []byte) interface{} {
+	switch f.messageTag {
+	case kHeartbeatPingTag:
+		return CreateHeartBeatPing(buffer)
+		//return proto.lookupType('mcs_proto.HeartbeatPing')
+	case kHeartbeatAckTag:
+		return CreateHeartBeatAck(buffer)
+		//return proto.lookupType('mcs_proto.HeartbeatAck')
+	case kLoginRequestTag:
+		return CreateLoginRequest(buffer)
+		//return proto.lookupType('mcs_proto.LoginRequest')
+	case kLoginResponseTag:
+		return CreateLoginResponse(buffer)
+		//return proto.lookupType('mcs_proto.LoginResponse')
+	case kCloseTag:
+		return CreateClose(buffer)
+		//return proto.lookupType('mcs_proto.Close')
+	case kIqStanzaTag:
+		return CreateIqStanza(buffer)
+		//return proto.lookupType('mcs_proto.IqStanza')
+	case kDataMessageStanzaTag:
+		return CreateDataMessageStanza(buffer)
+		//return proto.lookupType('mcs_proto.DataMessageStanza')
+	case kStreamErrorStanzaTag:
+		return CreateStreamErrorStanza(buffer)
+		//return proto.lookupType('mcs_proto.StreamErrorStanza')
+	default:
+		return nil
+	}
 }
 
 func (f *FCMSocketHandler) Init() {
