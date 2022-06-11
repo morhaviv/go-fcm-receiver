@@ -3,8 +3,10 @@ package go_fcm_receiver
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	pb "go-fcm-receiver/proto"
+	"log"
 	"net/http"
 )
 
@@ -58,7 +60,7 @@ type FCMSubscribeResponse struct {
 	PushSet string `json:"pushSet"`
 }
 
-func CreateLoginRequest(androidId *uint64, securityToken *uint64, chromeVersion string, persistentIds []string) *pb.LoginRequest {
+func CreateLoginRequestRaw(androidId *uint64, securityToken *uint64, chromeVersion string, persistentIds []string) []byte {
 	// Todo: Do something about this shit
 	chromeVersion = "chrome-63.0.3234.0" // Todo: Delete
 	domain := "mcs.android.com"
@@ -82,7 +84,7 @@ func CreateLoginRequest(androidId *uint64, securityToken *uint64, chromeVersion 
 	useRmq2 := true
 	authService := pb.LoginRequest_AuthService(2)
 	networkType := int32(1)
-	return &pb.LoginRequest{
+	req := &pb.LoginRequest{
 		Id:                   &chromeVersion,
 		Domain:               &domain,
 		User:                 &androidIdFormatted,
@@ -101,4 +103,11 @@ func CreateLoginRequest(androidId *uint64, securityToken *uint64, chromeVersion 
 		Status:               nil,
 		ClientEvent:          nil,
 	}
+
+	loginRequestData, err := proto.Marshal(req)
+	if err != nil {
+		log.Print(err)
+		return nil
+	}
+	return append([]byte{kMCSVersion, kLoginRequestTag, byte(proto.Size(req)), byte(1)}, loginRequestData...)
 }
