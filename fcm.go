@@ -1,7 +1,5 @@
 package go_fcm_receiver
 
-import "fmt"
-
 func (f *FCMClient) RegisterFCM() error {
 	privateKey, publicKey, authSecret, err := CreateKeys()
 	if err != nil {
@@ -15,9 +13,6 @@ func (f *FCMClient) RegisterFCM() error {
 		return err
 	}
 	f.FcmToken = token
-	fmt.Println(f.GcmToken)
-	fmt.Println(f.FcmToken)
-
 	return nil
 }
 
