@@ -10,7 +10,7 @@ import (
 
 func (f *FCMSocketHandler) StartSocketHandler() {
 	go f.readData()
-	time.Sleep(time.Minute)
+	time.Sleep(time.Minute * 5)
 }
 
 func (f *FCMSocketHandler) readData() {
@@ -32,6 +32,7 @@ func (f *FCMSocketHandler) onData() error {
 	f.onDataMutex.Lock()
 	defer f.onDataMutex.Unlock()
 
+	fmt.Println(string(f.data))
 	if f.isWaitingForData {
 		f.isWaitingForData = false
 		err := f.waitForData()
@@ -109,6 +110,7 @@ func (f *FCMSocketHandler) onGotVersion() error {
 }
 
 func (f *FCMSocketHandler) onGotMessageTag() error {
+	fmt.Println(f.data)
 	f.messageTag = int(f.data[0])
 	f.data = f.data[1:]
 
@@ -124,6 +126,7 @@ func (f *FCMSocketHandler) onGotMessageTag() error {
 func (f *FCMSocketHandler) onGotMessageSize() error {
 	var pos int
 	f.messageSize, pos = ReadInt32(f.data)
+	pos += 1
 	fmt.Println("POSSSS", pos)
 
 	fmt.Println("MESSAGE SIZE", f.messageSize, strconv.Itoa(f.messageSize))
@@ -150,7 +153,9 @@ func (f *FCMSocketHandler) onGotMessageSize() error {
 func (f *FCMSocketHandler) onGotMessageBytes() error {
 	protobuf := f.buildProtobufFromTag(f.data[:f.messageSize])
 	if protobuf == nil {
+		f.data = f.data[f.messageSize:]
 		err := errors.New("Unknown message tag " + strconv.Itoa(f.messageTag))
+		log.Println(err)
 		return err
 	}
 
@@ -175,6 +180,8 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 		return nil
 	}
 	//
+	fmt.Println("The message is: ")
+	fmt.Println(f.data[:f.messageSize])
 	f.data = f.data[f.messageSize:]
 	//const object = protobuf.toObject(message, {
 	//longs : String,
@@ -186,6 +193,7 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 	//
 	if f.messageTag == kLoginResponseTag {
 		if !f.handshakeComplete {
+			fmt.Println("Handshake complete")
 			f.handshakeComplete = true
 		}
 	}
@@ -209,34 +217,36 @@ func (f *FCMSocketHandler) getNextMessage() error {
 }
 
 func (f *FCMSocketHandler) buildProtobufFromTag(buffer []byte) interface{} {
-	switch f.messageTag {
-	case kHeartbeatPingTag:
-		return CreateHeartBeatPing(buffer)
-		//return proto.lookupType('mcs_proto.HeartbeatPing')
-	case kHeartbeatAckTag:
-		return CreateHeartBeatAck(buffer)
-		//return proto.lookupType('mcs_proto.HeartbeatAck')
-	case kLoginRequestTag:
-		return CreateLoginRequest(buffer)
-		//return proto.lookupType('mcs_proto.LoginRequest')
-	case kLoginResponseTag:
-		return CreateLoginResponse(buffer)
-		//return proto.lookupType('mcs_proto.LoginResponse')
-	case kCloseTag:
-		return CreateClose(buffer)
-		//return proto.lookupType('mcs_proto.Close')
-	case kIqStanzaTag:
-		return CreateIqStanza(buffer)
-		//return proto.lookupType('mcs_proto.IqStanza')
-	case kDataMessageStanzaTag:
-		return CreateDataMessageStanza(buffer)
-		//return proto.lookupType('mcs_proto.DataMessageStanza')
-	case kStreamErrorStanzaTag:
-		return CreateStreamErrorStanza(buffer)
-		//return proto.lookupType('mcs_proto.StreamErrorStanza')
-	default:
-		return nil
-	}
+	return f.messageTag
+	return nil
+	//switch f.messageTag {
+	//case kHeartbeatPingTag:
+	//	return CreateHeartBeatPing(buffer)
+	//	//return proto.lookupType('mcs_proto.HeartbeatPing')
+	//case kHeartbeatAckTag:
+	//	return CreateHeartBeatAck(buffer)
+	//	//return proto.lookupType('mcs_proto.HeartbeatAck')
+	//case kLoginRequestTag:
+	//	return CreateLoginRequest(buffer)
+	//	//return proto.lookupType('mcs_proto.LoginRequest')
+	//case kLoginResponseTag:
+	//	return CreateLoginResponse(buffer)
+	//	//return proto.lookupType('mcs_proto.LoginResponse')
+	//case kCloseTag:
+	//	return CreateClose(buffer)
+	//	//return proto.lookupType('mcs_proto.Close')
+	//case kIqStanzaTag:
+	//	return CreateIqStanza(buffer)
+	//	//return proto.lookupType('mcs_proto.IqStanza')
+	//case kDataMessageStanzaTag:
+	//	return CreateDataMessageStanza(buffer)
+	//	//return proto.lookupType('mcs_proto.DataMessageStanza')
+	//case kStreamErrorStanzaTag:
+	//	return CreateStreamErrorStanza(buffer)
+	//	//return proto.lookupType('mcs_proto.StreamErrorStanza')
+	//default:
+	//	return nil
+	//}
 }
 
 func (f *FCMSocketHandler) Init() {

@@ -8,6 +8,7 @@ import (
 	pb "go-fcm-receiver/proto"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 )
 
@@ -69,14 +70,14 @@ func CreateLoginRequestRaw(androidId *uint64, securityToken *uint64, chromeVersi
 	chromeVersion = "chrome-63.0.3234.0" // Todo: Delete
 	domain := "mcs.android.com"
 
-	//androidIdFormatted := strconv.FormatUint(*androidId, 10)
-	androidIdFormatted := "4630062094884880172"
+	androidIdFormatted := strconv.FormatUint(*androidId, 10)
+	//androidIdFormatted := "4630062094884880172"
 
-	//androidIdHex := "android-" + fmt.Sprintf("%x", *androidId)
-	androidIdHex := "android-404148f1b59d3f2c"
+	androidIdHex := "android-" + fmt.Sprintf("%x", *androidId)
+	//androidIdHex := "android-404148f1b59d3f2c"
 
-	//securityTokenFormatted := strconv.FormatUint(*securityToken, 10)
-	securityTokenFormatted := "5690696262983213347"
+	securityTokenFormatted := strconv.FormatUint(*securityToken, 10)
+	//securityTokenFormatted := "5690696262983213347"
 
 	settingName := "new_vc"
 	settingValue := "1"
