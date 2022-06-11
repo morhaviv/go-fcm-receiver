@@ -8,6 +8,7 @@ import (
 	pb "go-fcm-receiver/proto"
 	"log"
 	"net/http"
+	"sync"
 )
 
 // FCMClient structure
@@ -24,6 +25,7 @@ type FCMClient struct {
 	publicKey     string
 	authSecret    string
 	PersistentIds []string
+	socket        *FCMSocketHandler
 }
 
 func (f *FCMClient) CreateAppId() string {
@@ -110,4 +112,16 @@ func CreateLoginRequestRaw(androidId *uint64, securityToken *uint64, chromeVersi
 		return nil
 	}
 	return append([]byte{kMCSVersion, kLoginRequestTag, byte(proto.Size(req)), byte(1)}, loginRequestData...)
+}
+
+type FCMSocketHandler struct {
+	Socket            *tls.Conn
+	state             int
+	data              []byte
+	sizePacketSoFar   int
+	messageTag        int
+	messageSize       int
+	handshakeComplete bool
+	isWaitingForData  bool
+	onDataMutex       sync.Mutex
 }
