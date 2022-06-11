@@ -122,12 +122,13 @@ func (f *FCMSocketHandler) onGotMessageTag() error {
 }
 
 func (f *FCMSocketHandler) onGotMessageSize() error {
-
-	f.messageSize = int(f.data[0])
+	var pos int
+	f.messageSize, pos = ReadInt32(f.data)
+	fmt.Println("POSSSS", pos)
 
 	fmt.Println("MESSAGE SIZE", f.messageSize, strconv.Itoa(f.messageSize))
 
-	f.data = f.data[1:]
+	f.data = f.data[pos:]
 
 	f.sizePacketSoFar = 0
 
