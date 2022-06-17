@@ -32,6 +32,31 @@ type FCMClient struct {
 	OnDataMessage func(message []byte)
 }
 
+func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) error {
+	// Todo: change variable names to comments...
+	privateKeyString, err := base64.StdEncoding.DecodeString(privateKeyBase64)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	privateKey, err := generic.DecodePrivateKey(privateKeyString)
+	if err != nil {
+		return err
+	}
+	authSecretKeyString, err := base64.StdEncoding.DecodeString(authSecretBase64)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	f.privateKey = privateKey
+	f.publicKey = &privateKey.PublicKey
+	f.authSecret = authSecretKeyString
+	fmt.Println(f.privateKey)
+	fmt.Println(f.publicKey)
+	fmt.Println(f.authSecret)
+	return nil
+}
+
 func (f *FCMClient) CreateAppId() string {
 	f.AppId = fmt.Sprintf(generic.AppIdBase, uuid.New().String())
 	return f.AppId
@@ -91,9 +116,31 @@ func (f *FCMClient) startLoginHandshake(loginRequest []byte) error {
 }
 
 func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
+	fmt.Println("Received messageTag", messageTag)
 	if messageTag == generic.KLoginResponseTag {
 		f.PersistentIds = nil
+	} else if messageTag == generic.KHeartbeatPingTag {
+		err := f.Socket.SendHeartbeatPing()
+		if err != nil {
+			return err
+		}
+	} else if messageTag == generic.KIqStanzaTag {
+		_, ok := messageObject.(*fcm_protos.IqStanza)
+		if ok {
+			//fmt.Println(dataMessage.Error)
+			//fmt.Println(dataMessage.PersistentId)
+			//fmt.Println(dataMessage.From)
+			//fmt.Println(dataMessage.To)
+			//fmt.Println(dataMessage.Type)
+			//fmt.Println(dataMessage.GetLastStreamIdReceived())
+			//fmt.Println(dataMessage.Status)
+			//fmt.Println(dataMessage.Extension)
+			//fmt.Println(dataMessage.AccountId)
+			//fmt.Println(dataMessage.LastStreamIdReceived)
+			//fmt.Println(dataMessage.RmqId)
+			//fmt.Println(dataMessage.StreamId)
 
+		}
 	} else if messageTag == generic.KDataMessageStanzaTag {
 		dataMessage, ok := messageObject.(*fcm_protos.DataMessageStanza)
 		if ok {

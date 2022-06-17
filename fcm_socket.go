@@ -3,6 +3,8 @@ package go_fcm_receiver
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
+	"github.com/golang/protobuf/proto"
 	"go-fcm-receiver/fcm_protos"
 	"go-fcm-receiver/generic"
 	"log"
@@ -27,6 +29,23 @@ type FCMSocketHandler struct {
 
 func (f *FCMSocketHandler) StartSocketHandler() {
 	go f.readData()
+}
+
+func (f *FCMSocketHandler) SendHeartbeatPing() error {
+	obj := &fcm_protos.HeartbeatPing{}
+	data, err := proto.Marshal(obj)
+	if err != nil {
+		log.Println(err)
+		f.close()
+		return err
+	}
+	_, err = f.Socket.Write(append([]byte{generic.KHeartbeatPingTag, byte(proto.Size(obj))}, data...))
+	if err != nil {
+		log.Println(err)
+		f.close()
+		return err
+	}
+	return nil
 }
 
 func (f *FCMSocketHandler) readData() {
@@ -77,6 +96,7 @@ func (f *FCMSocketHandler) waitForData() error {
 		break
 	default:
 		err := errors.New(`Unexpected state: ` + strconv.Itoa(f.state))
+		log.Println(err)
 		return err
 	}
 
@@ -112,6 +132,7 @@ func (f *FCMSocketHandler) waitForData() error {
 		break
 	default:
 		err := errors.New(`Unexpected state: ` + strconv.Itoa(f.state))
+		log.Println(err)
 		return err
 	}
 
@@ -124,6 +145,7 @@ func (f *FCMSocketHandler) onGotVersion() error {
 
 	if version < generic.KMCSVersion && version != 38 {
 		err := errors.New("Got wrong version: " + strconv.Itoa(version))
+		log.Println(err)
 		return err
 	}
 
@@ -304,6 +326,7 @@ func (f *FCMSocketHandler) Init() {
 }
 
 func (f *FCMSocketHandler) close() {
+	fmt.Println("Closing connection")
 	if f.Socket != nil {
 		f.Socket.Close()
 	}

@@ -4,7 +4,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"fmt"
+	"crypto/x509"
+	"encoding/base64"
 	"github.com/xakep666/ecego"
 	"log"
 )
@@ -21,12 +22,17 @@ func CreateKeys() (*ecdsa.PrivateKey, *ecdsa.PublicKey, []byte, error) {
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	//publicKey := PubBytes(&privateKey.PublicKey)
 	authSecret, err := CreateAuthSecret()
 	if err != nil {
-		return nil, nil, nil, nil
+		return nil, nil, nil, err
 	}
-	fmt.Println("Creating new")
+	log.Println("Created a new auth secret key:", base64.StdEncoding.EncodeToString(authSecret))
+
+	privateKeyString, err := EncodePrivateKey(privateKey)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	log.Println("Created a new private key:", base64.StdEncoding.EncodeToString(privateKeyString))
 
 	return privateKey, &privateKey.PublicKey, authSecret, nil
 }
@@ -50,6 +56,25 @@ func CreatePrivateKeyP256() (*ecdsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
+func EncodePrivateKey(key *ecdsa.PrivateKey) ([]byte, error) {
+	derKey, err := x509.MarshalECPrivateKey(key)
+	if err != nil {
+		// Todo: add ERROR
+		return nil, err
+	}
+
+	return derKey, nil
+}
+
+func DecodePrivateKey(key []byte) (*ecdsa.PrivateKey, error) {
+	privateKey, err := x509.ParseECPrivateKey(key)
+	if err != nil {
+		// Todo: add ERROR
+		return nil, err
+	}
+	return privateKey, nil
+}
+
 func DecryptMessage(cryptoKey []byte, encryption []byte, rawData []byte, authSecret []byte, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 	engineOption := ecego.WithAuthSecret(authSecret)
 	engine := ecego.NewEngine(ecego.SingleKey(privateKey), engineOption)
@@ -60,6 +85,7 @@ func DecryptMessage(cryptoKey []byte, encryption []byte, rawData []byte, authSec
 	}
 	message, err := engine.Decrypt(rawData, []byte{}, params)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 	return message, nil

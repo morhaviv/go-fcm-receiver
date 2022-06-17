@@ -127,13 +127,13 @@ func DecodeLoginResponse(data []byte) (*LoginResponse, error) {
 }
 
 func DecodeClose(data []byte) (*Close, error) {
-	var close Close
-	err := proto.Unmarshal(data, &close)
+	var closeObject Close
+	err := proto.Unmarshal(data, &closeObject)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	return &close, nil
+	return &closeObject, nil
 }
 
 func DecodeIqStanza(data []byte) (*IqStanza, error) {
