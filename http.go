@@ -15,6 +15,11 @@ import (
 	"strings"
 )
 
+type FCMSubscribeResponse struct {
+	Token   string `json:"token"`
+	PushSet string `json:"pushSet"`
+}
+
 func (f *FCMClient) SendCheckInRequest(requestBody *pb.AndroidCheckinRequest) (*pb.AndroidCheckinResponse, error) {
 	data, err := proto.Marshal(requestBody)
 	if err != nil {

@@ -1,12 +1,27 @@
 package go_fcm_receiver
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log"
 	"strconv"
+	"sync"
 	"time"
 )
+
+type FCMSocketHandler struct {
+	Socket            *tls.Conn
+	state             int
+	data              []byte
+	sizePacketSoFar   int
+	messageTag        int
+	messageSize       int
+	handshakeComplete bool
+	isWaitingForData  bool
+	onDataMutex       sync.Mutex
+	OnMessage         func(messageTag int, message []byte)
+}
 
 func (f *FCMSocketHandler) StartSocketHandler() {
 	go f.readData()
@@ -32,7 +47,6 @@ func (f *FCMSocketHandler) onData() error {
 	f.onDataMutex.Lock()
 	defer f.onDataMutex.Unlock()
 
-	fmt.Println(string(f.data))
 	if f.isWaitingForData {
 		f.isWaitingForData = false
 		err := f.waitForData()
@@ -94,12 +108,10 @@ func (f *FCMSocketHandler) onGotVersion() error {
 	version := int(f.data[0])
 	f.data = f.data[1:]
 
-	if version < kMCSVersion && version != 38 {
+	if version < KMCSVersion && version != 38 {
 		err := errors.New("Got wrong version: " + strconv.Itoa(version))
 		return err
 	}
-
-	fmt.Println("version ", version, strconv.Itoa(version))
 
 	// Process the LoginResponse message tag.
 	err := f.onGotMessageTag()
@@ -114,8 +126,6 @@ func (f *FCMSocketHandler) onGotMessageTag() error {
 	f.messageTag = int(f.data[0])
 	f.data = f.data[1:]
 
-	fmt.Println("MESSAGE TAG", f.messageTag, strconv.Itoa(f.messageTag))
-
 	err := f.onGotMessageSize()
 	if err != nil {
 		return err
@@ -127,9 +137,6 @@ func (f *FCMSocketHandler) onGotMessageSize() error {
 	var pos int
 	f.messageSize, pos = ReadInt32(f.data)
 	pos += 1
-	fmt.Println("POSSSS", pos)
-
-	fmt.Println("MESSAGE SIZE", f.messageSize, strconv.Itoa(f.messageSize))
 
 	f.data = f.data[pos:]
 
@@ -159,8 +166,6 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 		return err
 	}
 
-	//// Messages with no content are valid; just use the default protobuf for
-	//// that tag.
 	if f.messageSize == 0 {
 		// Todo: DO
 		//this.emit('message', {tag: this._messageTag, object: {}});
@@ -226,7 +231,7 @@ func (f *FCMSocketHandler) buildProtobufFromTag(buffer []byte) interface{} {
 	//case kHeartbeatAckTag:
 	//	return CreateHeartBeatAck(buffer)
 	//	//return proto.lookupType('mcs_proto.HeartbeatAck')
-	//case kLoginRequestTag:
+	//case KLoginRequestTag:
 	//	return CreateLoginRequest(buffer)
 	//	//return proto.lookupType('mcs_proto.LoginRequest')
 	//case kLoginResponseTag:

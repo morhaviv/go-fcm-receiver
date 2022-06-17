@@ -36,14 +36,14 @@ const (
 	kSizePacketLenMax = 5
 
 	// The current MCS protocol version.
-	kMCSVersion = 41
+	KMCSVersion = 41
 
 	// MCS Message tags.
 	// WARNING= the order of these tags must remain the same, as the tag values
 	// must be consistent with those used on the server.
 	kHeartbeatPingTag       = 0
 	kHeartbeatAckTag        = 1
-	kLoginRequestTag        = 2
+	KLoginRequestTag        = 2
 	kLoginResponseTag       = 3
 	kCloseTag               = 4
 	kMessageStanzaTag       = 5
