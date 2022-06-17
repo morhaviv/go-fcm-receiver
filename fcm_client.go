@@ -28,7 +28,7 @@ type FCMClient struct {
 	publicKey     *ecdsa.PublicKey
 	authSecret    []byte
 	PersistentIds []string
-	Socket        *FCMSocketHandler
+	Socket        FCMSocketHandler
 	OnDataMessage func(message []byte)
 }
 
@@ -51,9 +51,7 @@ func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) e
 	f.privateKey = privateKey
 	f.publicKey = &privateKey.PublicKey
 	f.authSecret = authSecretKeyString
-	fmt.Println(f.privateKey)
-	fmt.Println(f.publicKey)
-	fmt.Println(f.authSecret)
+
 	return nil
 }
 
@@ -84,24 +82,20 @@ func (f *FCMClient) connect() {
 	}
 	f.IsAlive = true
 
-	fcmSocket := FCMSocketHandler{
-		Socket:    socket,
-		OnMessage: f.onMessage,
-		OnClose: func() {
-			f.IsAlive = false
-		},
+	f.Socket.Socket = socket
+	f.Socket.OnMessage = f.onMessage
+	f.Socket.OnClose = func() {
+		f.IsAlive = false
 	}
+	f.Socket.Init()
 
-	f.Socket = &fcmSocket
-	fcmSocket.Init()
-
-	fmt.Println("FCM Token: ", f.FcmToken)
+	fmt.Println("FCM Token:", f.FcmToken)
 	loginRequest := fcm_protos.CreateLoginRequestRaw(&f.AndroidId, &f.SecurityToken, "", f.PersistentIds)
 	err = f.startLoginHandshake(loginRequest)
 	if err != nil {
 		return
 	}
-	fcmSocket.StartSocketHandler()
+	f.Socket.StartSocketHandler()
 }
 
 func (f *FCMClient) startLoginHandshake(loginRequest []byte) error {
@@ -116,30 +110,13 @@ func (f *FCMClient) startLoginHandshake(loginRequest []byte) error {
 }
 
 func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
-	fmt.Println("Received messageTag", messageTag)
+	log.Println("Got message tag:", messageTag)
 	if messageTag == generic.KLoginResponseTag {
 		f.PersistentIds = nil
 	} else if messageTag == generic.KHeartbeatPingTag {
 		err := f.Socket.SendHeartbeatPing()
 		if err != nil {
 			return err
-		}
-	} else if messageTag == generic.KIqStanzaTag {
-		_, ok := messageObject.(*fcm_protos.IqStanza)
-		if ok {
-			//fmt.Println(dataMessage.Error)
-			//fmt.Println(dataMessage.PersistentId)
-			//fmt.Println(dataMessage.From)
-			//fmt.Println(dataMessage.To)
-			//fmt.Println(dataMessage.Type)
-			//fmt.Println(dataMessage.GetLastStreamIdReceived())
-			//fmt.Println(dataMessage.Status)
-			//fmt.Println(dataMessage.Extension)
-			//fmt.Println(dataMessage.AccountId)
-			//fmt.Println(dataMessage.LastStreamIdReceived)
-			//fmt.Println(dataMessage.RmqId)
-			//fmt.Println(dataMessage.StreamId)
-
 		}
 	} else if messageTag == generic.KDataMessageStanzaTag {
 		dataMessage, ok := messageObject.(*fcm_protos.DataMessageStanza)
