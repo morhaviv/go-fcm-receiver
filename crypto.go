@@ -4,8 +4,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"encoding/base64"
-	"fmt"
 	"github.com/xakep666/ecego"
 	"log"
 )
@@ -54,30 +52,17 @@ func CreatePrivateKeyP256() (*ecdsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-func DecryptMessage(cryptoKey []byte, encryption []byte, rawData []byte, authSecret []byte, privateKey *ecdsa.PrivateKey) error {
-	var message []byte
-	fmt.Println("auth secret", len(authSecret))
+func DecryptMessage(cryptoKey []byte, encryption []byte, rawData []byte, authSecret []byte, privateKey *ecdsa.PrivateKey) ([]byte, error) {
 	engineOption := ecego.WithAuthSecret(authSecret)
 	engine := ecego.NewEngine(ecego.SingleKey(privateKey), engineOption)
-	//encryption[2] = 'a'
 	params := ecego.OperationalParams{
 		Version: ecego.AESGCM,
 		Salt:    encryption,
 		DH:      cryptoKey,
 	}
-	fmt.Println(base64.RawStdEncoding.EncodeToString(encryption))
-	fmt.Println(base64.RawStdEncoding.EncodeToString(cryptoKey))
-	fmt.Println(base64.RawStdEncoding.EncodeToString(authSecret))
-	fmt.Println(authSecret)
-	fmt.Println(privateKey)
-	rnd, err := engine.Decrypt(rawData, message, params)
+	message, err := engine.Decrypt(rawData, []byte{}, params)
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println(err.Error())
+		return nil, err
 	}
-	fmt.Println("rand", rnd)
-	fmt.Println("rand", string(rnd))
-	fmt.Println("message", message)
-	fmt.Println("message2", string(message))
-	return nil
+	return message, nil
 }

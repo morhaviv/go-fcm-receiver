@@ -21,12 +21,12 @@ type FCMSocketHandler struct {
 	handshakeComplete bool
 	isWaitingForData  bool
 	onDataMutex       sync.Mutex
-	OnMessage         func(messageTag int, messageObject interface{})
+	OnMessage         func(messageTag int, messageObject interface{}) error
+	OnClose           func()
 }
 
 func (f *FCMSocketHandler) StartSocketHandler() {
 	go f.readData()
-	time.Sleep(time.Minute * 5)
 }
 
 func (f *FCMSocketHandler) readData() {
@@ -52,6 +52,7 @@ func (f *FCMSocketHandler) onData() error {
 		f.isWaitingForData = false
 		err := f.waitForData()
 		if err != nil {
+			f.close()
 			return err
 		}
 	}
@@ -86,16 +87,28 @@ func (f *FCMSocketHandler) waitForData() error {
 
 	switch f.state {
 	case generic.MCS_VERSION_TAG_AND_SIZE:
-		f.onGotVersion()
+		err := f.onGotVersion()
+		if err != nil {
+			return err
+		}
 		break
 	case generic.MCS_TAG_AND_SIZE:
-		f.onGotMessageTag()
+		err := f.onGotMessageTag()
+		if err != nil {
+			return err
+		}
 		break
 	case generic.MCS_SIZE:
-		f.onGotMessageSize()
+		err := f.onGotMessageSize()
+		if err != nil {
+			return err
+		}
 		break
 	case generic.MCS_PROTO_BYTES:
-		f.onGotMessageBytes()
+		err := f.onGotMessageBytes()
+		if err != nil {
+			return err
+		}
 		break
 	default:
 		err := errors.New(`Unexpected state: ` + strconv.Itoa(f.state))
@@ -114,7 +127,6 @@ func (f *FCMSocketHandler) onGotVersion() error {
 		return err
 	}
 
-	// Process the LoginResponse message tag.
 	err := f.onGotMessageTag()
 	if err != nil {
 		return err
@@ -174,7 +186,10 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 
 	if f.messageSize == 0 {
 		// Todo: DO
-		f.OnMessage(f.messageTag, nil)
+		err = f.OnMessage(f.messageTag, nil)
+		if err != nil {
+			return err
+		}
 		err = f.getNextMessage()
 		if err != nil {
 			return err
@@ -193,7 +208,10 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 	//
 	f.data = f.data[f.messageSize:]
 
-	f.OnMessage(f.messageTag, protobuf)
+	err = f.OnMessage(f.messageTag, protobuf)
+	if err != nil {
+		return err
+	}
 
 	if f.messageTag == generic.KLoginResponseTag {
 		if !f.handshakeComplete {
@@ -289,5 +307,6 @@ func (f *FCMSocketHandler) close() {
 	if f.Socket != nil {
 		f.Socket.Close()
 	}
+	f.OnClose()
 	f.Init()
 }

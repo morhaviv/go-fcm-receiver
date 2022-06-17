@@ -16,19 +16,20 @@ import (
 
 // FCMClient structure
 type FCMClient struct {
+	IsAlive       bool
 	SenderId      int64
 	HttpClient    *http.Client
 	AppId         string
 	GcmToken      string
 	FcmToken      string
-	Socket        *tls.Conn
 	androidId     uint64
 	securityToken uint64
 	privateKey    *ecdsa.PrivateKey
 	publicKey     *ecdsa.PublicKey
 	authSecret    []byte
 	PersistentIds []string
-	socket        *FCMSocketHandler
+	Socket        *FCMSocketHandler
+	OnDataMessage func(message []byte)
 }
 
 func (f *FCMClient) CreateAppId() string {
@@ -37,15 +38,16 @@ func (f *FCMClient) CreateAppId() string {
 }
 
 func (f *FCMClient) StartListening() {
-	loginRequest := fcm_protos.CreateLoginRequestRaw(&f.androidId, &f.securityToken, "", f.PersistentIds)
-	f.connect(loginRequest)
+	f.connect()
 }
 
-func (f *FCMClient) connect(loginRequest []byte) {
+func (f *FCMClient) connect() {
 	tlsConfig := &tls.Config{
 		GetConfigForClient: func(c *tls.ClientHelloInfo) (*tls.Config, error) {
-			c.Conn.(*net.TCPConn).SetKeepAlive(true) // Todo: Check if successful
-			//c.Conn.(*net.TCPConn).
+			err := c.Conn.(*net.TCPConn).SetKeepAlive(true)
+			if err != nil {
+				return nil, err
+			}
 			return nil, nil
 		},
 	}
@@ -55,38 +57,54 @@ func (f *FCMClient) connect(loginRequest []byte) {
 		log.Println(err)
 		return
 	}
+	f.IsAlive = true
 
 	fcmSocket := FCMSocketHandler{
 		Socket:    socket,
 		OnMessage: f.onMessage,
+		OnClose: func() {
+			f.IsAlive = false
+		},
 	}
-	f.socket = &fcmSocket
+
+	f.Socket = &fcmSocket
 	fcmSocket.Init()
 
-	fmt.Println("Token ", f.FcmToken)
-
-	f.startLoginHandshake(loginRequest)
+	fmt.Println("FCM Token: ", f.FcmToken)
+	loginRequest := fcm_protos.CreateLoginRequestRaw(&f.androidId, &f.securityToken, "", f.PersistentIds)
+	err = f.startLoginHandshake(loginRequest)
+	if err != nil {
+		return
+	}
 	fcmSocket.StartSocketHandler()
 }
 
-func (f *FCMClient) startLoginHandshake(loginRequest []byte) {
-	n, err := f.socket.Socket.Write(loginRequest)
+func (f *FCMClient) startLoginHandshake(loginRequest []byte) error {
+	n, err := f.Socket.Socket.Write(loginRequest)
 	if err != nil {
 		log.Println(n, err)
-		return
+		f.Socket.close()
+		f.IsAlive = false
+		return err
 	}
+	return nil
 }
 
-func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) {
+func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
 	if messageTag == generic.KDataMessageStanzaTag {
 		dataMessage, ok := messageObject.(*fcm_protos.DataMessageStanza)
 		if ok {
-			f.onDataMessage(dataMessage)
+			err := f.onDataMessage(dataMessage)
+			if err != nil {
+				return err
+			}
 		} else {
 			err := errors.New("error casting message to DataMessageStanza")
 			log.Println(err)
+			return err
 		}
 	}
+	return nil
 }
 
 func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) error {
@@ -95,7 +113,6 @@ func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) error {
 	var encryption []byte
 	for _, data := range message.AppData {
 		if *data.Key == "crypto-key" {
-			fmt.Println("cryptoKey", *data.Value, len(*data.Value), []byte(*data.Value))
 			cryptoKey, err = base64.URLEncoding.DecodeString((*data.Value)[3:])
 			if err != nil {
 				log.Println(err)
@@ -103,7 +120,6 @@ func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) error {
 			}
 		}
 		if *data.Key == "encryption" {
-			fmt.Println("encryption", *data.Value, len(*data.Value), []byte(*data.Value))
 			encryption, err = base64.URLEncoding.DecodeString((*data.Value)[5:])
 			if err != nil {
 				log.Println(err)
@@ -112,14 +128,11 @@ func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) error {
 		}
 	}
 	rawData := message.RawData
-
-	//privateKey := ecdsa.PrivateKey{}
-	//privateKey.D = new(big.Int).SetBytes([]byte(f.privateKey))
-	//privateKey.PublicKey.Curve = elliptic.P256()
-	//privateKey.PublicKey.X, privateKey.PublicKey.Y = privateKey.PublicKey.Curve.ScalarBaseMult(privateKey.D.Bytes())
-	err = DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
+	decryptedMessage, err := DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
 	if err != nil {
 		return err
 	}
+	f.PersistentIds = append(f.PersistentIds, *message.PersistentId)
+	go f.OnDataMessage(decryptedMessage)
 	return nil
 }
