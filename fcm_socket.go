@@ -3,7 +3,6 @@ package go_fcm_receiver
 import (
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"go-fcm-receiver/fcm_protos"
 	"go-fcm-receiver/generic"
 	"log"
@@ -124,7 +123,6 @@ func (f *FCMSocketHandler) onGotVersion() error {
 }
 
 func (f *FCMSocketHandler) onGotMessageTag() error {
-	fmt.Println(f.data)
 	f.messageTag = int(f.data[0])
 	f.data = f.data[1:]
 
@@ -137,6 +135,9 @@ func (f *FCMSocketHandler) onGotMessageTag() error {
 
 func (f *FCMSocketHandler) onGotMessageSize() error {
 	var pos int
+	for len(f.data) < 4 {
+		time.Sleep(time.Millisecond * 10)
+	}
 	f.messageSize, pos = ReadInt32(f.data)
 	pos += 1
 
@@ -190,8 +191,6 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 		return nil
 	}
 	//
-	fmt.Println("The message is: ")
-	fmt.Println(f.data[:f.messageSize])
 	f.data = f.data[f.messageSize:]
 
 	f.OnMessage(f.messageTag, protobuf)

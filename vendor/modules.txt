@@ -4,6 +4,12 @@ github.com/golang/protobuf/proto
 # github.com/google/uuid v1.3.0
 ## explicit
 github.com/google/uuid
+# github.com/xakep666/ecego v0.1.1
+## explicit; go 1.13
+github.com/xakep666/ecego
+# golang.org/x/crypto v0.0.0-20200214034016-1d94cc7ab1c6
+## explicit; go 1.11
+golang.org/x/crypto/hkdf
 # google.golang.org/protobuf v1.28.0
 ## explicit; go 1.11
 google.golang.org/protobuf/encoding/prototext

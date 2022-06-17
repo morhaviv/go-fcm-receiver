@@ -111,12 +111,13 @@ func (f *FCMClient) SendRegisterRequest() (string, error) {
 
 func (f *FCMClient) SendSubscribeRequest() (*FCMSubscribeResponse, error) {
 	// Todo: Move url.values generation to a different function (Like CheckInRequest)
-	publicKey := f.publicKey
+	publicKey := base64.URLEncoding.EncodeToString(PubBytes(f.publicKey))
+
 	publicKey = strings.ReplaceAll(publicKey, "=", "")
 	publicKey = strings.ReplaceAll(publicKey, "+", "")
 	publicKey = strings.ReplaceAll(publicKey, "/", "")
 
-	authSecret := f.authSecret
+	authSecret := base64.RawURLEncoding.EncodeToString(f.authSecret)
 	authSecret = strings.ReplaceAll(authSecret, "=", "")
 	authSecret = strings.ReplaceAll(authSecret, "+", "")
 	authSecret = strings.ReplaceAll(authSecret, "/", "")

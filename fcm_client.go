@@ -1,7 +1,9 @@
 package go_fcm_receiver
 
 import (
+	"crypto/ecdsa"
 	"crypto/tls"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -22,9 +24,9 @@ type FCMClient struct {
 	Socket        *tls.Conn
 	androidId     uint64
 	securityToken uint64
-	privateKey    string
-	publicKey     string
-	authSecret    string
+	privateKey    *ecdsa.PrivateKey
+	publicKey     *ecdsa.PublicKey
+	authSecret    []byte
 	PersistentIds []string
 	socket        *FCMSocketHandler
 }
@@ -76,12 +78,10 @@ func (f *FCMClient) startLoginHandshake(loginRequest []byte) {
 }
 
 func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) {
-	fmt.Println("Message Tag from onMessage is:", messageTag)
-	fmt.Println("Message from onMessage is:", messageObject)
 	if messageTag == generic.KDataMessageStanzaTag {
-		dataMessage, ok := messageObject.(fcm_protos.DataMessageStanza)
+		dataMessage, ok := messageObject.(*fcm_protos.DataMessageStanza)
 		if ok {
-			f.onDataMessage(&dataMessage)
+			f.onDataMessage(dataMessage)
 		} else {
 			err := errors.New("error casting message to DataMessageStanza")
 			log.Println(err)
@@ -89,6 +89,37 @@ func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) {
 	}
 }
 
-func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) {
+func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) error {
+	var err error
+	var cryptoKey []byte
+	var encryption []byte
+	for _, data := range message.AppData {
+		if *data.Key == "crypto-key" {
+			fmt.Println("cryptoKey", *data.Value, len(*data.Value), []byte(*data.Value))
+			cryptoKey, err = base64.URLEncoding.DecodeString((*data.Value)[3:])
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+		}
+		if *data.Key == "encryption" {
+			fmt.Println("encryption", *data.Value, len(*data.Value), []byte(*data.Value))
+			encryption, err = base64.URLEncoding.DecodeString((*data.Value)[5:])
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+		}
+	}
+	rawData := message.RawData
 
+	//privateKey := ecdsa.PrivateKey{}
+	//privateKey.D = new(big.Int).SetBytes([]byte(f.privateKey))
+	//privateKey.PublicKey.Curve = elliptic.P256()
+	//privateKey.PublicKey.X, privateKey.PublicKey.Y = privateKey.PublicKey.Curve.ScalarBaseMult(privateKey.D.Bytes())
+	err = DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
+	if err != nil {
+		return err
+	}
+	return nil
 }
