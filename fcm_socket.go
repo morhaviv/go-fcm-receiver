@@ -1,6 +1,7 @@
 package go_fcm_receiver
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -14,21 +15,44 @@ import (
 )
 
 type FCMSocketHandler struct {
-	Socket            *tls.Conn
-	state             int
-	data              []byte
-	sizePacketSoFar   int
-	messageTag        int
-	messageSize       int
-	handshakeComplete bool
-	isWaitingForData  bool
-	onDataMutex       sync.Mutex
-	OnMessage         func(messageTag int, messageObject interface{}) error
-	OnClose           func()
+	Socket                 *tls.Conn
+	HeartbeatInterval      time.Duration
+	state                  int
+	data                   []byte
+	sizePacketSoFar        int
+	messageTag             int
+	messageSize            int
+	handshakeComplete      bool
+	isWaitingForData       bool
+	heartbeatContextCancel context.CancelFunc
+	onDataMutex            sync.Mutex
+	OnMessage              func(messageTag int, messageObject interface{}) error
+	OnClose                func()
 }
 
 func (f *FCMSocketHandler) StartSocketHandler() {
 	go f.readData()
+	go f.sendHeartbeatPings()
+}
+
+func (f *FCMSocketHandler) sendHeartbeatPings() {
+	if f.HeartbeatInterval == 0 {
+		f.HeartbeatInterval = time.Minute
+	}
+	var ctx context.Context
+	ctx, f.heartbeatContextCancel = context.WithCancel(context.Background())
+	for {
+		select {
+		case <-time.After(f.HeartbeatInterval):
+			err := f.SendHeartbeatPing()
+			if err != nil {
+				return
+			}
+		case <-ctx.Done():
+			return
+		}
+
+	}
 }
 
 func (f *FCMSocketHandler) SendHeartbeatPing() error {
@@ -168,12 +192,21 @@ func (f *FCMSocketHandler) onGotMessageTag() error {
 }
 
 func (f *FCMSocketHandler) onGotMessageSize() error {
+	incompleteSizePacket := false
 	var pos int
-	for len(f.data) < 4 {
-		time.Sleep(time.Millisecond * 10)
-	}
-	f.messageSize, pos = ReadInt32(f.data)
+	var err error
+	f.messageSize, pos, err = ReadInt32(f.data)
 	pos += 1
+	if err != nil {
+		incompleteSizePacket = true
+	}
+
+	if incompleteSizePacket {
+		f.sizePacketSoFar = pos
+		f.state = generic.MCS_SIZE
+		err = f.waitForData()
+		return err
+	}
 
 	f.data = f.data[pos:]
 
@@ -327,6 +360,7 @@ func (f *FCMSocketHandler) Init() {
 
 func (f *FCMSocketHandler) close() {
 	fmt.Println("Closing connection")
+	f.heartbeatContextCancel()
 	if f.Socket != nil {
 		f.Socket.Close()
 	}
