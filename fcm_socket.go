@@ -222,8 +222,6 @@ func (f *FCMSocketHandler) getNextMessage() error {
 }
 
 func (f *FCMSocketHandler) buildProtobufFromTag(buffer []byte) (interface{}, error) {
-	//return f.messageTag
-	//return nil
 	switch f.messageTag {
 	case generic.KHeartbeatPingTag:
 		heartbeatPing, err := fcm_protos.DecodeHeartbeatPing(buffer)

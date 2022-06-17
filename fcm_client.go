@@ -2,6 +2,7 @@ package go_fcm_receiver
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"go-fcm-receiver/fcm_protos"
@@ -77,4 +78,17 @@ func (f *FCMClient) startLoginHandshake(loginRequest []byte) {
 func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) {
 	fmt.Println("Message Tag from onMessage is:", messageTag)
 	fmt.Println("Message from onMessage is:", messageObject)
+	if messageTag == generic.KDataMessageStanzaTag {
+		dataMessage, ok := messageObject.(fcm_protos.DataMessageStanza)
+		if ok {
+			f.onDataMessage(&dataMessage)
+		} else {
+			err := errors.New("error casting message to DataMessageStanza")
+			log.Println(err)
+		}
+	}
+}
+
+func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) {
+
 }
