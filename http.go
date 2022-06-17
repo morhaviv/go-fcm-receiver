@@ -68,7 +68,7 @@ func (f *FCMClient) SendRegisterRequest() (string, error) {
 	values := url.Values{}
 	values.Add("app", "org.chromium.linux")
 	values.Add("X-subtype", f.AppId)
-	values.Add("device", strconv.FormatUint(f.androidId, 10))
+	values.Add("device", strconv.FormatUint(f.AndroidId, 10))
 	values.Add("sender", base64.RawURLEncoding.EncodeToString(generic.FcmServerKey))
 
 	req, err := http.NewRequest("POST", generic.RegisterUrl, strings.NewReader(values.Encode()))
@@ -77,7 +77,7 @@ func (f *FCMClient) SendRegisterRequest() (string, error) {
 		return "", err
 	}
 
-	req.Header.Add("Authorization", "AidLogin "+strconv.FormatUint(f.androidId, 10)+":"+strconv.FormatUint(f.securityToken, 10))
+	req.Header.Add("Authorization", "AidLogin "+strconv.FormatUint(f.AndroidId, 10)+":"+strconv.FormatUint(f.SecurityToken, 10))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("User-Agent", "")
 
@@ -111,7 +111,7 @@ func (f *FCMClient) SendRegisterRequest() (string, error) {
 
 func (f *FCMClient) SendSubscribeRequest() (*FCMSubscribeResponse, error) {
 	// Todo: Move url.values generation to a different function (Like CheckInRequest)
-	publicKey := base64.URLEncoding.EncodeToString(PubBytes(f.publicKey))
+	publicKey := base64.URLEncoding.EncodeToString(generic.PubBytes(f.publicKey))
 
 	publicKey = strings.ReplaceAll(publicKey, "=", "")
 	publicKey = strings.ReplaceAll(publicKey, "+", "")

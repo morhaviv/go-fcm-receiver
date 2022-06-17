@@ -22,8 +22,8 @@ type FCMClient struct {
 	AppId         string
 	GcmToken      string
 	FcmToken      string
-	androidId     uint64
-	securityToken uint64
+	AndroidId     uint64
+	SecurityToken uint64
 	privateKey    *ecdsa.PrivateKey
 	publicKey     *ecdsa.PublicKey
 	authSecret    []byte
@@ -71,7 +71,7 @@ func (f *FCMClient) connect() {
 	fcmSocket.Init()
 
 	fmt.Println("FCM Token: ", f.FcmToken)
-	loginRequest := fcm_protos.CreateLoginRequestRaw(&f.androidId, &f.securityToken, "", f.PersistentIds)
+	loginRequest := fcm_protos.CreateLoginRequestRaw(&f.AndroidId, &f.SecurityToken, "", f.PersistentIds)
 	err = f.startLoginHandshake(loginRequest)
 	if err != nil {
 		return
@@ -91,7 +91,10 @@ func (f *FCMClient) startLoginHandshake(loginRequest []byte) error {
 }
 
 func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
-	if messageTag == generic.KDataMessageStanzaTag {
+	if messageTag == generic.KLoginResponseTag {
+		f.PersistentIds = nil
+
+	} else if messageTag == generic.KDataMessageStanzaTag {
 		dataMessage, ok := messageObject.(*fcm_protos.DataMessageStanza)
 		if ok {
 			err := f.onDataMessage(dataMessage)
@@ -108,6 +111,9 @@ func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
 }
 
 func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) error {
+	if generic.StringsSliceContains(f.PersistentIds, *message.PersistentId) {
+		return nil
+	}
 	var err error
 	var cryptoKey []byte
 	var encryption []byte
@@ -128,7 +134,7 @@ func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) error {
 		}
 	}
 	rawData := message.RawData
-	decryptedMessage, err := DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
+	decryptedMessage, err := generic.DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
 	if err != nil {
 		return err
 	}

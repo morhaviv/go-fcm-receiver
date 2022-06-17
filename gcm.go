@@ -20,15 +20,15 @@ func (f *FCMClient) RegisterGCM() error {
 }
 
 func (f *FCMClient) checkInRequest() error {
-	androidId := int64(f.androidId)
-	checkInRequest := fcm_protos.CreateCheckInRequest(&androidId, &f.securityToken, "")
+	androidId := int64(f.AndroidId)
+	checkInRequest := fcm_protos.CreateCheckInRequest(&androidId, &f.SecurityToken, "")
 	responsePb, err := f.SendCheckInRequest(checkInRequest)
 	if err != nil {
 		return err
 	}
 
-	f.androidId = *responsePb.AndroidId
-	f.securityToken = *responsePb.SecurityToken
+	f.AndroidId = *responsePb.AndroidId
+	f.SecurityToken = *responsePb.SecurityToken
 
 	return nil
 }

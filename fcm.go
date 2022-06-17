@@ -1,7 +1,10 @@
 package go_fcm_receiver
 
+import "go-fcm-receiver/generic"
+
 func (f *FCMClient) RegisterFCM() error {
-	privateKey, publicKey, authSecret, err := CreateKeys()
+	// Todo: Add option to load old keys
+	privateKey, publicKey, authSecret, err := generic.CreateKeys()
 	if err != nil {
 		return err
 	}

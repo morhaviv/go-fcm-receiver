@@ -1,9 +1,10 @@
-package go_fcm_receiver
+package generic
 
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"fmt"
 	"github.com/xakep666/ecego"
 	"log"
 )
@@ -25,10 +26,7 @@ func CreateKeys() (*ecdsa.PrivateKey, *ecdsa.PublicKey, []byte, error) {
 	if err != nil {
 		return nil, nil, nil, nil
 	}
-
-	//privateKeyEncoded := base64.RawURLEncoding.EncodeToString(privateKey.D.Bytes())
-	//publicKeyEncoded := base64.RawURLEncoding.EncodeToString(publicKey)
-	//authSecretEncoded := base64.RawURLEncoding.EncodeToString(authSecret)
+	fmt.Println("Creating new")
 
 	return privateKey, &privateKey.PublicKey, authSecret, nil
 }
