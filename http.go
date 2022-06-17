@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/golang/protobuf/proto"
-	pb "go-fcm-receiver/proto"
+	pb "go-fcm-receiver/fcm_protos"
+	"go-fcm-receiver/generic"
 	"io"
 	"log"
 	"net/http"
@@ -30,7 +31,7 @@ func (f *FCMClient) SendCheckInRequest(requestBody *pb.AndroidCheckinRequest) (*
 
 	buff := bytes.NewBuffer(data)
 
-	req, err := http.NewRequest("POST", CheckInUrl, buff)
+	req, err := http.NewRequest("POST", generic.CheckInUrl, buff)
 	if err != nil {
 		log.Print(err)
 		return nil, err
@@ -68,9 +69,9 @@ func (f *FCMClient) SendRegisterRequest() (string, error) {
 	values.Add("app", "org.chromium.linux")
 	values.Add("X-subtype", f.AppId)
 	values.Add("device", strconv.FormatUint(f.androidId, 10))
-	values.Add("sender", base64.RawURLEncoding.EncodeToString(FcmServerKey))
+	values.Add("sender", base64.RawURLEncoding.EncodeToString(generic.FcmServerKey))
 
-	req, err := http.NewRequest("POST", RegisterUrl, strings.NewReader(values.Encode()))
+	req, err := http.NewRequest("POST", generic.RegisterUrl, strings.NewReader(values.Encode()))
 	if err != nil {
 		log.Print(err)
 		return "", err
@@ -122,11 +123,11 @@ func (f *FCMClient) SendSubscribeRequest() (*FCMSubscribeResponse, error) {
 
 	values := url.Values{}
 	values.Add("authorized_entity", strconv.FormatInt(f.SenderId, 10))
-	values.Add("endpoint", FcmEndpointUrl+"/"+f.GcmToken)
+	values.Add("endpoint", generic.FcmEndpointUrl+"/"+f.GcmToken)
 	values.Add("encryption_key", publicKey)
 	values.Add("encryption_auth", authSecret)
 
-	req, err := http.NewRequest("POST", FcmSubscribeUrl, strings.NewReader(values.Encode()))
+	req, err := http.NewRequest("POST", generic.FcmSubscribeUrl, strings.NewReader(values.Encode()))
 	if err != nil {
 		log.Print(err)
 		return nil, err

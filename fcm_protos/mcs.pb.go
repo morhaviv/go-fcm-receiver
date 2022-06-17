@@ -9,9 +9,9 @@
 // versions:
 // 	protoc-gen-go v1.28.0
 // 	protoc        v3.21.1
-// source: mcs.proto
+// source: mcs.fcm_protos
 
-package proto
+package fcm_protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -599,7 +599,7 @@ type ClientEvent struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Common fields [1-99]
-	Type *ClientEvent_Type `protobuf:"varint,1,opt,name=type,enum=proto.ClientEvent_Type" json:"type,omitempty"`
+	Type *ClientEvent_Type `protobuf:"varint,1,opt,name=type,enum=fcm_protos.ClientEvent_Type" json:"type,omitempty"`
 	// Fields for DISCARDED_EVENTS messages [100-199]
 	NumberDiscardedEvents *uint32 `protobuf:"varint,100,opt,name=number_discarded_events,json=numberDiscardedEvents" json:"number_discarded_events,omitempty"`
 	// Fields for FAILED_CONNECTION and SUCCESSFUL_CONNECTION messages [200-299]
@@ -701,7 +701,7 @@ type LoginRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id *string `protobuf:"bytes,1,req,name=id" json:"id,omitempty"` // Must be present ( proto required ), may be empty
+	Id *string `protobuf:"bytes,1,req,name=id" json:"id,omitempty"` // Must be present ( fcm_protos required ), may be empty
 	// string.
 	// mcs.android.com.
 	Domain *string `protobuf:"bytes,2,req,name=domain" json:"domain,omitempty"`
@@ -724,7 +724,7 @@ type LoginRequest struct {
 	UseRmq2   *bool  `protobuf:"varint,14,opt,name=use_rmq2,json=useRmq2" json:"use_rmq2,omitempty"`
 	AccountId *int64 `protobuf:"varint,15,opt,name=account_id,json=accountId" json:"account_id,omitempty"`
 	// ANDROID_ID = 2
-	AuthService *LoginRequest_AuthService `protobuf:"varint,16,opt,name=auth_service,json=authService,enum=proto.LoginRequest_AuthService" json:"auth_service,omitempty"`
+	AuthService *LoginRequest_AuthService `protobuf:"varint,16,opt,name=auth_service,json=authService,enum=fcm_protos.LoginRequest_AuthService" json:"auth_service,omitempty"`
 	NetworkType *int32                    `protobuf:"varint,17,opt,name=network_type,json=networkType" json:"network_type,omitempty"`
 	Status      *int64                    `protobuf:"varint,18,opt,name=status" json:"status,omitempty"`
 	// Events recorded on the client after the last successful connection.
@@ -1153,7 +1153,7 @@ type IqStanza struct {
 	unknownFields protoimpl.UnknownFields
 
 	RmqId *int64           `protobuf:"varint,1,opt,name=rmq_id,json=rmqId" json:"rmq_id,omitempty"`
-	Type  *IqStanza_IqType `protobuf:"varint,2,req,name=type,enum=proto.IqStanza_IqType" json:"type,omitempty"`
+	Type  *IqStanza_IqType `protobuf:"varint,2,req,name=type,enum=fcm_protos.IqStanza_IqType" json:"type,omitempty"`
 	Id    *string          `protobuf:"bytes,3,req,name=id" json:"id,omitempty"`
 	From  *string          `protobuf:"bytes,4,opt,name=from" json:"from,omitempty"`
 	To    *string          `protobuf:"bytes,5,opt,name=to" json:"to,omitempty"`
@@ -1865,41 +1865,41 @@ func file_mcs_proto_rawDescGZIP() []byte {
 var file_mcs_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_mcs_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_mcs_proto_goTypes = []interface{}{
-	(ClientEvent_Type)(0),         // 0: proto.ClientEvent.Type
-	(LoginRequest_AuthService)(0), // 1: proto.LoginRequest.AuthService
-	(IqStanza_IqType)(0),          // 2: proto.IqStanza.IqType
-	(*HeartbeatPing)(nil),         // 3: proto.HeartbeatPing
-	(*HeartbeatAck)(nil),          // 4: proto.HeartbeatAck
-	(*ErrorInfo)(nil),             // 5: proto.ErrorInfo
-	(*Setting)(nil),               // 6: proto.Setting
-	(*HeartbeatStat)(nil),         // 7: proto.HeartbeatStat
-	(*HeartbeatConfig)(nil),       // 8: proto.HeartbeatConfig
-	(*ClientEvent)(nil),           // 9: proto.ClientEvent
-	(*LoginRequest)(nil),          // 10: proto.LoginRequest
-	(*LoginResponse)(nil),         // 11: proto.LoginResponse
-	(*StreamErrorStanza)(nil),     // 12: proto.StreamErrorStanza
-	(*Close)(nil),                 // 13: proto.Close
-	(*Extension)(nil),             // 14: proto.Extension
-	(*IqStanza)(nil),              // 15: proto.IqStanza
-	(*AppData)(nil),               // 16: proto.AppData
-	(*DataMessageStanza)(nil),     // 17: proto.DataMessageStanza
-	(*StreamAck)(nil),             // 18: proto.StreamAck
-	(*SelectiveAck)(nil),          // 19: proto.SelectiveAck
+	(ClientEvent_Type)(0),         // 0: fcm_protos.ClientEvent.Type
+	(LoginRequest_AuthService)(0), // 1: fcm_protos.LoginRequest.AuthService
+	(IqStanza_IqType)(0),          // 2: fcm_protos.IqStanza.IqType
+	(*HeartbeatPing)(nil),         // 3: fcm_protos.HeartbeatPing
+	(*HeartbeatAck)(nil),          // 4: fcm_protos.HeartbeatAck
+	(*ErrorInfo)(nil),             // 5: fcm_protos.ErrorInfo
+	(*Setting)(nil),               // 6: fcm_protos.Setting
+	(*HeartbeatStat)(nil),         // 7: fcm_protos.HeartbeatStat
+	(*HeartbeatConfig)(nil),       // 8: fcm_protos.HeartbeatConfig
+	(*ClientEvent)(nil),           // 9: fcm_protos.ClientEvent
+	(*LoginRequest)(nil),          // 10: fcm_protos.LoginRequest
+	(*LoginResponse)(nil),         // 11: fcm_protos.LoginResponse
+	(*StreamErrorStanza)(nil),     // 12: fcm_protos.StreamErrorStanza
+	(*Close)(nil),                 // 13: fcm_protos.Close
+	(*Extension)(nil),             // 14: fcm_protos.Extension
+	(*IqStanza)(nil),              // 15: fcm_protos.IqStanza
+	(*AppData)(nil),               // 16: fcm_protos.AppData
+	(*DataMessageStanza)(nil),     // 17: fcm_protos.DataMessageStanza
+	(*StreamAck)(nil),             // 18: fcm_protos.StreamAck
+	(*SelectiveAck)(nil),          // 19: fcm_protos.SelectiveAck
 }
 var file_mcs_proto_depIdxs = []int32{
-	14, // 0: proto.ErrorInfo.extension:type_name -> proto.Extension
-	0,  // 1: proto.ClientEvent.type:type_name -> proto.ClientEvent.Type
-	6,  // 2: proto.LoginRequest.setting:type_name -> proto.Setting
-	7,  // 3: proto.LoginRequest.heartbeat_stat:type_name -> proto.HeartbeatStat
-	1,  // 4: proto.LoginRequest.auth_service:type_name -> proto.LoginRequest.AuthService
-	9,  // 5: proto.LoginRequest.client_event:type_name -> proto.ClientEvent
-	5,  // 6: proto.LoginResponse.error:type_name -> proto.ErrorInfo
-	6,  // 7: proto.LoginResponse.setting:type_name -> proto.Setting
-	8,  // 8: proto.LoginResponse.heartbeat_config:type_name -> proto.HeartbeatConfig
-	2,  // 9: proto.IqStanza.type:type_name -> proto.IqStanza.IqType
-	5,  // 10: proto.IqStanza.error:type_name -> proto.ErrorInfo
-	14, // 11: proto.IqStanza.extension:type_name -> proto.Extension
-	16, // 12: proto.DataMessageStanza.app_data:type_name -> proto.AppData
+	14, // 0: fcm_protos.ErrorInfo.extension:type_name -> fcm_protos.Extension
+	0,  // 1: fcm_protos.ClientEvent.type:type_name -> fcm_protos.ClientEvent.Type
+	6,  // 2: fcm_protos.LoginRequest.setting:type_name -> fcm_protos.Setting
+	7,  // 3: fcm_protos.LoginRequest.heartbeat_stat:type_name -> fcm_protos.HeartbeatStat
+	1,  // 4: fcm_protos.LoginRequest.auth_service:type_name -> fcm_protos.LoginRequest.AuthService
+	9,  // 5: fcm_protos.LoginRequest.client_event:type_name -> fcm_protos.ClientEvent
+	5,  // 6: fcm_protos.LoginResponse.error:type_name -> fcm_protos.ErrorInfo
+	6,  // 7: fcm_protos.LoginResponse.setting:type_name -> fcm_protos.Setting
+	8,  // 8: fcm_protos.LoginResponse.heartbeat_config:type_name -> fcm_protos.HeartbeatConfig
+	2,  // 9: fcm_protos.IqStanza.type:type_name -> fcm_protos.IqStanza.IqType
+	5,  // 10: fcm_protos.IqStanza.error:type_name -> fcm_protos.ErrorInfo
+	14, // 11: fcm_protos.IqStanza.extension:type_name -> fcm_protos.Extension
+	16, // 12: fcm_protos.DataMessageStanza.app_data:type_name -> fcm_protos.AppData
 	13, // [13:13] is the sub-list for method output_type
 	13, // [13:13] is the sub-list for method input_type
 	13, // [13:13] is the sub-list for extension type_name

@@ -1,15 +1,15 @@
-package proto
+package fcm_protos
 
 import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"go-fcm-receiver"
+	"go-fcm-receiver/generic"
 	"log"
 	"strconv"
 )
 
 func CreateLoginRequestRaw(androidId *uint64, securityToken *uint64, chromeVersion string, persistentIds []string) []byte {
-	// Todo: Consider moving to proto/builder.go
+	// Todo: Consider moving to fcm_protos/builder.go
 	// Todo: Do something about this shit
 	chromeVersion = "chrome-63.0.3234.0" // Todo: Delete
 	domain := "mcs.android.com"
@@ -58,11 +58,11 @@ func CreateLoginRequestRaw(androidId *uint64, securityToken *uint64, chromeVersi
 		log.Print(err)
 		return nil
 	}
-	return append([]byte{go_fcm_receiver.KMCSVersion, go_fcm_receiver.KLoginRequestTag, byte(proto.Size(req)), byte(1)}, loginRequestData...)
+	return append([]byte{generic.KMCSVersion, generic.KLoginRequestTag, byte(proto.Size(req)), byte(1)}, loginRequestData...)
 }
 
 func CreateCheckInRequest(androidId *int64, securityToken *uint64, chromeVersion string) *AndroidCheckinRequest {
-	// Todo: Consider moving to proto/builder.go
+	// Todo: Consider moving to fcm_protos/builder.go
 	// Todo: Do something about this shit
 	chromeVersion = "63.0.3234.0" // Todo: Delete
 	userSerialNumber := int32(0)
@@ -84,4 +84,84 @@ func CreateCheckInRequest(androidId *int64, securityToken *uint64, chromeVersion
 		Version:          &version,
 		UserSerialNumber: &userSerialNumber,
 	}
+}
+
+func DecodeHeartbeatPing(data []byte) (*HeartbeatPing, error) {
+	var heartbeatPing HeartbeatPing
+	err := proto.Unmarshal(data, &heartbeatPing)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return &heartbeatPing, nil
+}
+
+func DecodeHeartbeatAck(data []byte) (*HeartbeatAck, error) {
+	var heartbeatAck HeartbeatAck
+	err := proto.Unmarshal(data, &heartbeatAck)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return &heartbeatAck, nil
+}
+
+func DecodeLoginRequest(data []byte) (*LoginRequest, error) {
+	var loginRequest LoginRequest
+	err := proto.Unmarshal(data, &loginRequest)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return &loginRequest, nil
+}
+
+func DecodeLoginResponse(data []byte) (*LoginResponse, error) {
+	var loginResponse LoginResponse
+	err := proto.Unmarshal(data, &loginResponse)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return &loginResponse, nil
+}
+
+func DecodeClose(data []byte) (*Close, error) {
+	var close Close
+	err := proto.Unmarshal(data, &close)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return &close, nil
+}
+
+func DecodeIqStanza(data []byte) (*IqStanza, error) {
+	var iqStanza IqStanza
+	err := proto.Unmarshal(data, &iqStanza)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return &iqStanza, nil
+}
+
+func DecodeDataMessageStanza(data []byte) (*DataMessageStanza, error) {
+	var dataMessageStanza DataMessageStanza
+	err := proto.Unmarshal(data, &dataMessageStanza)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return &dataMessageStanza, nil
+}
+
+func DecodeStreamErrorStanza(data []byte) (*StreamErrorStanza, error) {
+	var streamErrorStanza StreamErrorStanza
+	err := proto.Unmarshal(data, &streamErrorStanza)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return &streamErrorStanza, nil
 }

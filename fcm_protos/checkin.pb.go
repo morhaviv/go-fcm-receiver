@@ -8,9 +8,9 @@
 // versions:
 // 	protoc-gen-go v1.28.0
 // 	protoc        v3.21.1
-// source: checkin.proto
+// source: checkin.fcm_protos
 
-package proto
+package fcm_protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -572,14 +572,14 @@ func file_checkin_proto_rawDescGZIP() []byte {
 
 var file_checkin_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_checkin_proto_goTypes = []interface{}{
-	(*GservicesSetting)(nil),       // 0: proto.GservicesSetting
-	(*AndroidCheckinRequest)(nil),  // 1: proto.AndroidCheckinRequest
-	(*AndroidCheckinResponse)(nil), // 2: proto.AndroidCheckinResponse
-	(*AndroidCheckinProto)(nil),    // 3: proto.AndroidCheckinProto
+	(*GservicesSetting)(nil),       // 0: fcm_protos.GservicesSetting
+	(*AndroidCheckinRequest)(nil),  // 1: fcm_protos.AndroidCheckinRequest
+	(*AndroidCheckinResponse)(nil), // 2: fcm_protos.AndroidCheckinResponse
+	(*AndroidCheckinProto)(nil),    // 3: fcm_protos.AndroidCheckinProto
 }
 var file_checkin_proto_depIdxs = []int32{
-	3, // 0: proto.AndroidCheckinRequest.checkin:type_name -> proto.AndroidCheckinProto
-	0, // 1: proto.AndroidCheckinResponse.setting:type_name -> proto.GservicesSetting
+	3, // 0: fcm_protos.AndroidCheckinRequest.checkin:type_name -> fcm_protos.AndroidCheckinProto
+	0, // 1: fcm_protos.AndroidCheckinResponse.setting:type_name -> fcm_protos.GservicesSetting
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

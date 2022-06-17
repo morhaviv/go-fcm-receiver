@@ -4,7 +4,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"github.com/google/uuid"
-	"go-fcm-receiver/proto"
+	"go-fcm-receiver/fcm_protos"
+	"go-fcm-receiver/generic"
 	"log"
 	"net"
 	"net/http"
@@ -28,12 +29,12 @@ type FCMClient struct {
 }
 
 func (f *FCMClient) CreateAppId() string {
-	f.AppId = fmt.Sprintf(AppIdBase, uuid.New().String())
+	f.AppId = fmt.Sprintf(generic.AppIdBase, uuid.New().String())
 	return f.AppId
 }
 
 func (f *FCMClient) StartListening() {
-	loginRequest := proto.CreateLoginRequestRaw(&f.androidId, &f.securityToken, "", f.PersistentIds)
+	loginRequest := fcm_protos.CreateLoginRequestRaw(&f.androidId, &f.securityToken, "", f.PersistentIds)
 	f.connect(loginRequest)
 }
 
@@ -46,13 +47,16 @@ func (f *FCMClient) connect(loginRequest []byte) {
 		},
 	}
 
-	socket, err := tls.Dial("tcp", FcmSocketAddress, tlsConfig)
+	socket, err := tls.Dial("tcp", generic.FcmSocketAddress, tlsConfig)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	fcmSocket := FCMSocketHandler{Socket: socket}
+	fcmSocket := FCMSocketHandler{
+		Socket:    socket,
+		OnMessage: f.onMessage,
+	}
 	f.socket = &fcmSocket
 	fcmSocket.Init()
 
@@ -68,5 +72,9 @@ func (f *FCMClient) startLoginHandshake(loginRequest []byte) {
 		log.Println(n, err)
 		return
 	}
+}
 
+func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) {
+	fmt.Println("Message Tag from onMessage is:", messageTag)
+	fmt.Println("Message from onMessage is:", messageObject)
 }

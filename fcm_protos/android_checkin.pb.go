@@ -9,9 +9,9 @@
 // versions:
 // 	protoc-gen-go v1.28.0
 // 	protoc        v3.21.1
-// source: android_checkin.proto
+// source: android_checkin.fcm_protos
 
-package proto
+package fcm_protos
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -28,7 +28,7 @@ const (
 )
 
 // enum values correspond to the type of device.
-// Used in the AndroidCheckinProto and Device proto.
+// Used in the AndroidCheckinProto and Device fcm_protos.
 type DeviceType int32
 
 const (
@@ -237,11 +237,11 @@ type ChromeBuildProto struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The platform of the device.
-	Platform *ChromeBuildProto_Platform `protobuf:"varint,1,opt,name=platform,enum=proto.ChromeBuildProto_Platform" json:"platform,omitempty"`
+	Platform *ChromeBuildProto_Platform `protobuf:"varint,1,opt,name=platform,enum=fcm_protos.ChromeBuildProto_Platform" json:"platform,omitempty"`
 	// The Chrome instance's version.
 	ChromeVersion *string `protobuf:"bytes,2,opt,name=chrome_version,json=chromeVersion" json:"chrome_version,omitempty"`
 	// The Channel (build type) of Chrome.
-	Channel *ChromeBuildProto_Channel `protobuf:"varint,3,opt,name=channel,enum=proto.ChromeBuildProto_Channel" json:"channel,omitempty"`
+	Channel *ChromeBuildProto_Channel `protobuf:"varint,3,opt,name=channel,enum=fcm_protos.ChromeBuildProto_Channel" json:"channel,omitempty"`
 }
 
 func (x *ChromeBuildProto) Reset() {
@@ -319,10 +319,10 @@ type AndroidCheckinProto struct {
 	// (which can't be changed without wiping the device), and 1,2,3,...
 	// for additional profiles (which can be added and deleted freely).
 	UserNumber *int32 `protobuf:"varint,9,opt,name=user_number,json=userNumber" json:"user_number,omitempty"`
-	// Class of device.  Indicates the type of build proto
+	// Class of device.  Indicates the type of build fcm_protos
 	// (IosBuildProto/ChromeBuildProto/AndroidBuildProto)
-	// That is included in this proto
-	Type *DeviceType `protobuf:"varint,12,opt,name=type,enum=proto.DeviceType,def=1" json:"type,omitempty"`
+	// That is included in this fcm_protos
+	Type *DeviceType `protobuf:"varint,12,opt,name=type,enum=fcm_protos.DeviceType,def=1" json:"type,omitempty"`
 	// For devices running MCS on Chrome, build-specific characteristics
 	// of the browser.  There are no hardware aspects (except for ChromeOS).
 	// This will only be populated for Chrome builds/ChromeOS devices
@@ -490,17 +490,17 @@ func file_android_checkin_proto_rawDescGZIP() []byte {
 var file_android_checkin_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_android_checkin_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_android_checkin_proto_goTypes = []interface{}{
-	(DeviceType)(0),                // 0: proto.DeviceType
-	(ChromeBuildProto_Platform)(0), // 1: proto.ChromeBuildProto.Platform
-	(ChromeBuildProto_Channel)(0),  // 2: proto.ChromeBuildProto.Channel
-	(*ChromeBuildProto)(nil),       // 3: proto.ChromeBuildProto
-	(*AndroidCheckinProto)(nil),    // 4: proto.AndroidCheckinProto
+	(DeviceType)(0),                // 0: fcm_protos.DeviceType
+	(ChromeBuildProto_Platform)(0), // 1: fcm_protos.ChromeBuildProto.Platform
+	(ChromeBuildProto_Channel)(0),  // 2: fcm_protos.ChromeBuildProto.Channel
+	(*ChromeBuildProto)(nil),       // 3: fcm_protos.ChromeBuildProto
+	(*AndroidCheckinProto)(nil),    // 4: fcm_protos.AndroidCheckinProto
 }
 var file_android_checkin_proto_depIdxs = []int32{
-	1, // 0: proto.ChromeBuildProto.platform:type_name -> proto.ChromeBuildProto.Platform
-	2, // 1: proto.ChromeBuildProto.channel:type_name -> proto.ChromeBuildProto.Channel
-	0, // 2: proto.AndroidCheckinProto.type:type_name -> proto.DeviceType
-	3, // 3: proto.AndroidCheckinProto.chrome_build:type_name -> proto.ChromeBuildProto
+	1, // 0: fcm_protos.ChromeBuildProto.platform:type_name -> fcm_protos.ChromeBuildProto.Platform
+	2, // 1: fcm_protos.ChromeBuildProto.channel:type_name -> fcm_protos.ChromeBuildProto.Channel
+	0, // 2: fcm_protos.AndroidCheckinProto.type:type_name -> fcm_protos.DeviceType
+	3, // 3: fcm_protos.AndroidCheckinProto.chrome_build:type_name -> fcm_protos.ChromeBuildProto
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
