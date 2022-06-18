@@ -19,14 +19,14 @@ type FCMSocketHandler struct {
 	HeartbeatInterval      time.Duration
 	state                  int
 	data                   []byte
-	dataMutex              *sync.Mutex
+	dataMutex              sync.Mutex
 	sizePacketSoFar        int
 	messageTag             int
 	messageSize            int
 	handshakeComplete      bool
 	isWaitingForData       bool
 	heartbeatContextCancel context.CancelFunc
-	onDataMutex            *sync.Mutex
+	onDataMutex            sync.Mutex
 	OnMessage              func(messageTag int, messageObject interface{}) error
 	OnClose                func()
 }
