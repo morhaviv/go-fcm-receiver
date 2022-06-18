@@ -19,14 +19,14 @@ type FCMSocketHandler struct {
 	HeartbeatInterval      time.Duration
 	state                  int
 	data                   []byte
-	dataMutex              *sync.Mutex
+	dataMutex              sync.Mutex
 	sizePacketSoFar        int
 	messageTag             int
 	messageSize            int
 	handshakeComplete      bool
 	isWaitingForData       bool
 	heartbeatContextCancel context.CancelFunc
-	onDataMutex            *sync.Mutex
+	onDataMutex            sync.Mutex
 	OnMessage              func(messageTag int, messageObject interface{}) error
 	OnClose                func()
 }
@@ -376,7 +376,6 @@ func (f *FCMSocketHandler) buildProtobufFromTag(buffer []byte) (interface{}, err
 
 func (f *FCMSocketHandler) Init() {
 	f.state = generic.MCS_VERSION_TAG_AND_SIZE
-	f.dataMutex = &sync.Mutex{}
 	f.dataMutex.Lock()
 	f.data = []byte{}
 	f.dataMutex.Unlock()
