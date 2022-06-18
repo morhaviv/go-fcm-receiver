@@ -1,4 +1,4 @@
-module go-fcm-receiver
+module github.com/morhaviv/go-fcm-receiver
 
 go 1.18
 
