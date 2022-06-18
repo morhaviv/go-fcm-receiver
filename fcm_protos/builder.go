@@ -3,7 +3,7 @@ package fcm_protos
 import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"go-fcm-receiver/generic"
+	"github.com/morhaviv/go-fcm-receiver/generic"
 	"log"
 	"strconv"
 )

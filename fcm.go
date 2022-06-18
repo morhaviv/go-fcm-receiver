@@ -2,7 +2,7 @@ package go_fcm_receiver
 
 import (
 	"encoding/base64"
-	"go-fcm-receiver/generic"
+	"github.com/morhaviv/go-fcm-receiver/generic"
 	"log"
 )
 
