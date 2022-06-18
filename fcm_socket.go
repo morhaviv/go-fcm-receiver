@@ -19,13 +19,14 @@ type FCMSocketHandler struct {
 	HeartbeatInterval      time.Duration
 	state                  int
 	data                   []byte
+	dataMutex              *sync.Mutex
 	sizePacketSoFar        int
 	messageTag             int
 	messageSize            int
 	handshakeComplete      bool
 	isWaitingForData       bool
 	heartbeatContextCancel context.CancelFunc
-	onDataMutex            sync.Mutex
+	onDataMutex            *sync.Mutex
 	OnMessage              func(messageTag int, messageObject interface{}) error
 	OnClose                func()
 }
@@ -82,7 +83,9 @@ func (f *FCMSocketHandler) readData() {
 			log.Println(err)
 			return
 		}
+		f.dataMutex.Lock()
 		f.data = append(f.data, buffer...)
+		f.dataMutex.Unlock()
 		go f.onData()
 	}
 }
@@ -123,11 +126,13 @@ func (f *FCMSocketHandler) waitForData() error {
 		log.Println(err)
 		return err
 	}
-
+	f.dataMutex.Lock()
 	if len(f.data) < minBytesNeeded {
+		f.dataMutex.Unlock()
 		f.isWaitingForData = true
 		return nil
 	}
+	f.dataMutex.Unlock()
 
 	switch f.state {
 	case generic.MCS_VERSION_TAG_AND_SIZE:
@@ -164,8 +169,10 @@ func (f *FCMSocketHandler) waitForData() error {
 }
 
 func (f *FCMSocketHandler) onGotVersion() error {
+	f.dataMutex.Lock()
 	version := int(f.data[0])
 	f.data = f.data[1:]
+	f.dataMutex.Unlock()
 
 	if version < generic.KMCSVersion && version != 38 {
 		err := errors.New("Got wrong version: " + strconv.Itoa(version))
@@ -181,8 +188,10 @@ func (f *FCMSocketHandler) onGotVersion() error {
 }
 
 func (f *FCMSocketHandler) onGotMessageTag() error {
+	f.dataMutex.Lock()
 	f.messageTag = int(f.data[0])
 	f.data = f.data[1:]
+	f.dataMutex.Unlock()
 
 	err := f.onGotMessageSize()
 	if err != nil {
@@ -195,7 +204,9 @@ func (f *FCMSocketHandler) onGotMessageSize() error {
 	incompleteSizePacket := false
 	var pos int
 	var err error
+	f.dataMutex.Lock()
 	f.messageSize, pos, err = ReadInt32(f.data)
+	f.dataMutex.Unlock()
 	pos += 1
 	if err != nil {
 		incompleteSizePacket = true
@@ -208,7 +219,9 @@ func (f *FCMSocketHandler) onGotMessageSize() error {
 		return err
 	}
 
+	f.dataMutex.Lock()
 	f.data = f.data[pos:]
+	f.dataMutex.Unlock()
 
 	f.sizePacketSoFar = 0
 
@@ -228,7 +241,18 @@ func (f *FCMSocketHandler) onGotMessageSize() error {
 }
 
 func (f *FCMSocketHandler) onGotMessageBytes() error {
+	f.dataMutex.Lock()
+	if len(f.data) < f.messageSize {
+		f.dataMutex.Unlock()
+		f.state = generic.MCS_PROTO_BYTES
+		err := f.waitForData()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 	protobuf, err := f.buildProtobufFromTag(f.data[:f.messageSize])
+	f.dataMutex.Unlock()
 	if err != nil {
 		return err
 	}
@@ -261,7 +285,9 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 		return nil
 	}
 	//
+	f.dataMutex.Lock()
 	f.data = f.data[f.messageSize:]
+	f.dataMutex.Unlock()
 
 	err = f.OnMessage(f.messageTag, protobuf)
 	if err != nil {
@@ -350,7 +376,10 @@ func (f *FCMSocketHandler) buildProtobufFromTag(buffer []byte) (interface{}, err
 
 func (f *FCMSocketHandler) Init() {
 	f.state = generic.MCS_VERSION_TAG_AND_SIZE
-	f.data = nil
+	f.dataMutex = &sync.Mutex{}
+	f.dataMutex.Lock()
+	f.data = []byte{}
+	f.dataMutex.Unlock()
 	f.sizePacketSoFar = 0
 	f.messageTag = 0
 	f.messageSize = 0

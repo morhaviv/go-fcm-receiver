@@ -1,6 +1,10 @@
 package go_fcm_receiver
 
-import "go-fcm-receiver/generic"
+import (
+	"encoding/base64"
+	"go-fcm-receiver/generic"
+	"log"
+)
 
 func (f *FCMClient) RegisterFCM() error {
 	// Todo: Add option to load old keys
@@ -17,6 +21,19 @@ func (f *FCMClient) RegisterFCM() error {
 	}
 	f.FcmToken = token
 	return nil
+}
+
+func (f *FCMClient) GetPrivateKeyBase64() (string, error) {
+	privateKeyString, err := generic.EncodePrivateKey(f.privateKey)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(privateKeyString), nil
+}
+
+func (f *FCMClient) GetAuthSecretBase64() string {
+	return base64.StdEncoding.EncodeToString(f.authSecret)
 }
 
 func (f *FCMClient) subscribeRequest() (string, error) {
