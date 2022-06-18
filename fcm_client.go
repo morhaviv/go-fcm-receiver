@@ -110,7 +110,6 @@ func (f *FCMClient) startLoginHandshake(loginRequest []byte) error {
 }
 
 func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
-	log.Println("Got message tag:", messageTag)
 	if messageTag == generic.KLoginResponseTag {
 		f.PersistentIds = nil
 	} else if messageTag == generic.KHeartbeatPingTag {
