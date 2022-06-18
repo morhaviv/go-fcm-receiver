@@ -1,7 +1,7 @@
 package go_fcm_receiver
 
 import (
-	"go-fcm-receiver/fcm_protos"
+	"github.com/morhaviv/go-fcm-receiver/fcm_protos"
 	"time"
 )
 
