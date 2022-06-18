@@ -376,7 +376,6 @@ func (f *FCMSocketHandler) buildProtobufFromTag(buffer []byte) (interface{}, err
 
 func (f *FCMSocketHandler) Init() {
 	f.state = generic.MCS_VERSION_TAG_AND_SIZE
-	f.dataMutex = &sync.Mutex{}
 	f.dataMutex.Lock()
 	f.data = []byte{}
 	f.dataMutex.Unlock()
