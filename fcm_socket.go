@@ -227,12 +227,12 @@ func (f *FCMSocketHandler) onGotMessageSize() error {
 
 	if f.messageSize > 0 {
 		f.state = generic.MCS_PROTO_BYTES
-		err := f.waitForData()
+		err = f.waitForData()
 		if err != nil {
 			return err
 		}
 	} else {
-		err := f.onGotMessageBytes()
+		err = f.onGotMessageBytes()
 		if err != nil {
 			return err
 		}
