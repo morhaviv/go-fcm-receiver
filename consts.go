@@ -1,4 +1,4 @@
-package generic
+package go_fcm_receiver
 
 const CheckInUrl = "https://android.clients.google.com/checkin"
 const RegisterUrl = "https://android.clients.google.com/c2dm/register3"

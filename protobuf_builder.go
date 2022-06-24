@@ -1,9 +1,8 @@
-package fcm_protos
+package go_fcm_receiver
 
 import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/morhaviv/go-fcm-receiver/generic"
 	"log"
 	"strconv"
 )
@@ -58,7 +57,7 @@ func CreateLoginRequestRaw(androidId *uint64, securityToken *uint64, chromeVersi
 		log.Print(err)
 		return nil
 	}
-	return append([]byte{generic.KMCSVersion, generic.KLoginRequestTag, byte(proto.Size(req)), byte(1)}, loginRequestData...)
+	return append([]byte{KMCSVersion, KLoginRequestTag, byte(proto.Size(req)), byte(1)}, loginRequestData...)
 }
 
 func CreateCheckInRequest(androidId *int64, securityToken *uint64, chromeVersion string) *AndroidCheckinRequest {

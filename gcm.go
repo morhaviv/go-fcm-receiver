@@ -1,7 +1,6 @@
 package go_fcm_receiver
 
 import (
-	"github.com/morhaviv/go-fcm-receiver/fcm_protos"
 	"time"
 )
 
@@ -21,7 +20,7 @@ func (f *FCMClient) RegisterGCM() error {
 
 func (f *FCMClient) checkInRequest() error {
 	androidId := int64(f.AndroidId)
-	checkInRequest := fcm_protos.CreateCheckInRequest(&androidId, &f.SecurityToken, "")
+	checkInRequest := CreateCheckInRequest(&androidId, &f.SecurityToken, "")
 	responsePb, err := f.SendCheckInRequest(checkInRequest)
 	if err != nil {
 		return err

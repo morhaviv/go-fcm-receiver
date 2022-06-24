@@ -10,7 +10,7 @@
 // 	protoc        v3.21.1
 // source: checkin.fcm_protos
 
-package fcm_protos
+package go_fcm_receiver
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

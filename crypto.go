@@ -1,4 +1,4 @@
-package generic
+package go_fcm_receiver
 
 import (
 	"crypto/ecdsa"

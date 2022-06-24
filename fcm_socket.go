@@ -4,10 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/morhaviv/go-fcm-receiver/fcm_protos"
-	"github.com/morhaviv/go-fcm-receiver/generic"
 	"log"
 	"strconv"
 	"sync"
@@ -57,14 +54,14 @@ func (f *FCMSocketHandler) sendHeartbeatPings() {
 }
 
 func (f *FCMSocketHandler) SendHeartbeatPing() error {
-	obj := &fcm_protos.HeartbeatPing{}
+	obj := &HeartbeatPing{}
 	data, err := proto.Marshal(obj)
 	if err != nil {
 		log.Println(err)
 		f.close()
 		return err
 	}
-	_, err = f.Socket.Write(append([]byte{generic.KHeartbeatPingTag, byte(proto.Size(obj))}, data...))
+	_, err = f.Socket.Write(append([]byte{KHeartbeatPingTag, byte(proto.Size(obj))}, data...))
 	if err != nil {
 		log.Println(err)
 		f.close()
@@ -109,16 +106,16 @@ func (f *FCMSocketHandler) waitForData() error {
 	minBytesNeeded := 0
 
 	switch f.state {
-	case generic.MCS_VERSION_TAG_AND_SIZE:
-		minBytesNeeded = generic.KVersionPacketLen + generic.KTagPacketLen + generic.KSizePacketLenMin
+	case MCS_VERSION_TAG_AND_SIZE:
+		minBytesNeeded = KVersionPacketLen + KTagPacketLen + KSizePacketLenMin
 		break
-	case generic.MCS_TAG_AND_SIZE:
-		minBytesNeeded = generic.KTagPacketLen + generic.KSizePacketLenMin
+	case MCS_TAG_AND_SIZE:
+		minBytesNeeded = KTagPacketLen + KSizePacketLenMin
 		break
-	case generic.MCS_SIZE:
+	case MCS_SIZE:
 		minBytesNeeded = f.sizePacketSoFar + 1
 		break
-	case generic.MCS_PROTO_BYTES:
+	case MCS_PROTO_BYTES:
 		minBytesNeeded = f.messageSize
 		break
 	default:
@@ -135,25 +132,25 @@ func (f *FCMSocketHandler) waitForData() error {
 	f.dataMutex.Unlock()
 
 	switch f.state {
-	case generic.MCS_VERSION_TAG_AND_SIZE:
+	case MCS_VERSION_TAG_AND_SIZE:
 		err := f.onGotVersion()
 		if err != nil {
 			return err
 		}
 		break
-	case generic.MCS_TAG_AND_SIZE:
+	case MCS_TAG_AND_SIZE:
 		err := f.onGotMessageTag()
 		if err != nil {
 			return err
 		}
 		break
-	case generic.MCS_SIZE:
+	case MCS_SIZE:
 		err := f.onGotMessageSize()
 		if err != nil {
 			return err
 		}
 		break
-	case generic.MCS_PROTO_BYTES:
+	case MCS_PROTO_BYTES:
 		err := f.onGotMessageBytes()
 		if err != nil {
 			return err
@@ -174,7 +171,7 @@ func (f *FCMSocketHandler) onGotVersion() error {
 	f.data = f.data[1:]
 	f.dataMutex.Unlock()
 
-	if version < generic.KMCSVersion && version != 38 {
+	if version < KMCSVersion && version != 38 {
 		err := errors.New("Got wrong version: " + strconv.Itoa(version))
 		log.Println(err)
 		return err
@@ -214,7 +211,7 @@ func (f *FCMSocketHandler) onGotMessageSize() error {
 
 	if incompleteSizePacket {
 		f.sizePacketSoFar = pos
-		f.state = generic.MCS_SIZE
+		f.state = MCS_SIZE
 		err = f.waitForData()
 		return err
 	}
@@ -226,13 +223,13 @@ func (f *FCMSocketHandler) onGotMessageSize() error {
 	f.sizePacketSoFar = 0
 
 	if f.messageSize > 0 {
-		f.state = generic.MCS_PROTO_BYTES
-		err := f.waitForData()
+		f.state = MCS_PROTO_BYTES
+		err = f.waitForData()
 		if err != nil {
 			return err
 		}
 	} else {
-		err := f.onGotMessageBytes()
+		err = f.onGotMessageBytes()
 		if err != nil {
 			return err
 		}
@@ -244,7 +241,7 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 	f.dataMutex.Lock()
 	if len(f.data) < f.messageSize {
 		f.dataMutex.Unlock()
-		f.state = generic.MCS_PROTO_BYTES
+		f.state = MCS_PROTO_BYTES
 		err := f.waitForData()
 		if err != nil {
 			return err
@@ -264,7 +261,6 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 	}
 
 	if f.messageSize == 0 {
-		// Todo: DO
 		err = f.OnMessage(f.messageTag, nil)
 		if err != nil {
 			return err
@@ -275,16 +271,16 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 		}
 		return nil
 	}
-	//
+
 	if len(f.data) < f.messageSize {
-		f.state = generic.MCS_PROTO_BYTES
+		f.state = MCS_PROTO_BYTES
 		err = f.waitForData()
 		if err != nil {
 			return err
 		}
 		return nil
 	}
-	//
+
 	f.dataMutex.Lock()
 	f.data = f.data[f.messageSize:]
 	f.dataMutex.Unlock()
@@ -294,7 +290,7 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 		return err
 	}
 
-	if f.messageTag == generic.KLoginResponseTag {
+	if f.messageTag == KLoginResponseTag {
 		if !f.handshakeComplete {
 			log.Println("Handshake complete")
 			f.handshakeComplete = true
@@ -311,7 +307,7 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 func (f *FCMSocketHandler) getNextMessage() error {
 	f.messageTag = 0
 	f.messageSize = 0
-	f.state = generic.MCS_TAG_AND_SIZE
+	f.state = MCS_TAG_AND_SIZE
 	err := f.waitForData()
 	if err != nil {
 		return err
@@ -321,50 +317,50 @@ func (f *FCMSocketHandler) getNextMessage() error {
 
 func (f *FCMSocketHandler) buildProtobufFromTag(buffer []byte) (interface{}, error) {
 	switch f.messageTag {
-	case generic.KHeartbeatPingTag:
-		heartbeatPing, err := fcm_protos.DecodeHeartbeatPing(buffer)
+	case KHeartbeatPingTag:
+		heartbeatPing, err := DecodeHeartbeatPing(buffer)
 		if err != nil {
 			return nil, err
 		}
 		return heartbeatPing, nil
-	case generic.KHeartbeatAckTag:
-		heartbeatAck, err := fcm_protos.DecodeHeartbeatAck(buffer)
+	case KHeartbeatAckTag:
+		heartbeatAck, err := DecodeHeartbeatAck(buffer)
 		if err != nil {
 			return nil, err
 		}
 		return heartbeatAck, nil
-	case generic.KLoginRequestTag:
-		loginRequest, err := fcm_protos.DecodeLoginRequest(buffer)
+	case KLoginRequestTag:
+		loginRequest, err := DecodeLoginRequest(buffer)
 		if err != nil {
 			return nil, err
 		}
 		return loginRequest, nil
-	case generic.KLoginResponseTag:
-		loginResponse, err := fcm_protos.DecodeLoginResponse(buffer)
+	case KLoginResponseTag:
+		loginResponse, err := DecodeLoginResponse(buffer)
 		if err != nil {
 			return nil, err
 		}
 		return loginResponse, nil
-	case generic.KCloseTag:
-		closeObject, err := fcm_protos.DecodeClose(buffer)
+	case KCloseTag:
+		closeObject, err := DecodeClose(buffer)
 		if err != nil {
 			return nil, err
 		}
 		return closeObject, nil
-	case generic.KIqStanzaTag:
-		iqStanza, err := fcm_protos.DecodeIqStanza(buffer)
+	case KIqStanzaTag:
+		iqStanza, err := DecodeIqStanza(buffer)
 		if err != nil {
 			return nil, err
 		}
 		return iqStanza, nil
-	case generic.KDataMessageStanzaTag:
-		dataMessageStanza, err := fcm_protos.DecodeDataMessageStanza(buffer)
+	case KDataMessageStanzaTag:
+		dataMessageStanza, err := DecodeDataMessageStanza(buffer)
 		if err != nil {
 			return nil, err
 		}
 		return dataMessageStanza, nil
-	case generic.KStreamErrorStanzaTag:
-		streamErrorStanza, err := fcm_protos.DecodeStreamErrorStanza(buffer)
+	case KStreamErrorStanzaTag:
+		streamErrorStanza, err := DecodeStreamErrorStanza(buffer)
 		if err != nil {
 			return nil, err
 		}
@@ -375,7 +371,7 @@ func (f *FCMSocketHandler) buildProtobufFromTag(buffer []byte) (interface{}, err
 }
 
 func (f *FCMSocketHandler) Init() {
-	f.state = generic.MCS_VERSION_TAG_AND_SIZE
+	f.state = MCS_VERSION_TAG_AND_SIZE
 	f.dataMutex.Lock()
 	f.data = []byte{}
 	f.dataMutex.Unlock()
@@ -387,7 +383,6 @@ func (f *FCMSocketHandler) Init() {
 }
 
 func (f *FCMSocketHandler) close() {
-	fmt.Println("Closing connection")
 	f.heartbeatContextCancel()
 	if f.Socket != nil {
 		f.Socket.Close()

@@ -2,6 +2,15 @@ package go_fcm_receiver
 
 import "errors"
 
+func StringsSliceContains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
 func ReadUint32(buf []byte) (int, int, error) {
 	value := 4294967295
 	// optimizer type-hint, tends to deopt otherwise (?!)

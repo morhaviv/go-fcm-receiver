@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/morhaviv/go-fcm-receiver/fcm_protos"
-	"github.com/morhaviv/go-fcm-receiver/generic"
 	"log"
 	"net"
 	"net/http"
@@ -33,13 +31,12 @@ type FCMClient struct {
 }
 
 func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) error {
-	// Todo: change variable names to comments...
 	privateKeyString, err := base64.StdEncoding.DecodeString(privateKeyBase64)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	privateKey, err := generic.DecodePrivateKey(privateKeyString)
+	privateKey, err := DecodePrivateKey(privateKeyString)
 	if err != nil {
 		return err
 	}
@@ -56,7 +53,7 @@ func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) e
 }
 
 func (f *FCMClient) CreateAppId() string {
-	f.AppId = fmt.Sprintf(generic.AppIdBase, uuid.New().String())
+	f.AppId = fmt.Sprintf(AppIdBase, uuid.New().String())
 	return f.AppId
 }
 
@@ -75,7 +72,7 @@ func (f *FCMClient) connect() {
 		},
 	}
 
-	socket, err := tls.Dial("tcp", generic.FcmSocketAddress, tlsConfig)
+	socket, err := tls.Dial("tcp", FcmSocketAddress, tlsConfig)
 	if err != nil {
 		log.Println(err)
 		return
@@ -90,7 +87,7 @@ func (f *FCMClient) connect() {
 	f.Socket.Init()
 
 	fmt.Println("FCM Token:", f.FcmToken)
-	loginRequest := fcm_protos.CreateLoginRequestRaw(&f.AndroidId, &f.SecurityToken, "", f.PersistentIds)
+	loginRequest := CreateLoginRequestRaw(&f.AndroidId, &f.SecurityToken, "", f.PersistentIds)
 	err = f.startLoginHandshake(loginRequest)
 	if err != nil {
 		return
@@ -110,15 +107,15 @@ func (f *FCMClient) startLoginHandshake(loginRequest []byte) error {
 }
 
 func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
-	if messageTag == generic.KLoginResponseTag {
+	if messageTag == KLoginResponseTag {
 		f.PersistentIds = nil
-	} else if messageTag == generic.KHeartbeatPingTag {
+	} else if messageTag == KHeartbeatPingTag {
 		err := f.Socket.SendHeartbeatPing()
 		if err != nil {
 			return err
 		}
-	} else if messageTag == generic.KDataMessageStanzaTag {
-		dataMessage, ok := messageObject.(*fcm_protos.DataMessageStanza)
+	} else if messageTag == KDataMessageStanzaTag {
+		dataMessage, ok := messageObject.(*DataMessageStanza)
 		if ok {
 			err := f.onDataMessage(dataMessage)
 			if err != nil {
@@ -133,8 +130,8 @@ func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
 	return nil
 }
 
-func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) error {
-	if generic.StringsSliceContains(f.PersistentIds, *message.PersistentId) {
+func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
+	if StringsSliceContains(f.PersistentIds, *message.PersistentId) {
 		return nil
 	}
 	var err error
@@ -157,7 +154,7 @@ func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) error {
 		}
 	}
 	rawData := message.RawData
-	decryptedMessage, err := generic.DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
+	decryptedMessage, err := DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
 	if err != nil {
 		return err
 	}
