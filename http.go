@@ -7,7 +7,6 @@ import (
 	"errors"
 	"github.com/golang/protobuf/proto"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -22,7 +21,6 @@ type FCMSubscribeResponse struct {
 func (f *FCMClient) SendCheckInRequest(requestBody *AndroidCheckinRequest) (*AndroidCheckinResponse, error) {
 	data, err := proto.Marshal(requestBody)
 	if err != nil {
-		log.Print(err)
 		return nil, err
 	}
 
@@ -30,7 +28,6 @@ func (f *FCMClient) SendCheckInRequest(requestBody *AndroidCheckinRequest) (*And
 
 	req, err := http.NewRequest("POST", CheckInUrl, buff)
 	if err != nil {
-		log.Print(err)
 		return nil, err
 	}
 
@@ -39,21 +36,18 @@ func (f *FCMClient) SendCheckInRequest(requestBody *AndroidCheckinRequest) (*And
 
 	resp, err := f.HttpClient.Do(req)
 	if err != nil {
-		log.Print(err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	result, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Print(err)
 		return nil, err
 	}
 
 	var responsePb AndroidCheckinResponse
 	err = proto.Unmarshal(result, &responsePb)
 	if err != nil {
-		log.Print(err)
 		return nil, err
 	}
 
@@ -70,7 +64,6 @@ func (f *FCMClient) SendRegisterRequest() (string, error) {
 
 	req, err := http.NewRequest("POST", RegisterUrl, strings.NewReader(values.Encode()))
 	if err != nil {
-		log.Print(err)
 		return "", err
 	}
 
@@ -80,26 +73,22 @@ func (f *FCMClient) SendRegisterRequest() (string, error) {
 
 	resp, err := f.HttpClient.Do(req)
 	if err != nil {
-		log.Print(err)
 		return "", err
 	}
 	defer resp.Body.Close()
 
 	result, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Print(err)
 		return "", err
 	}
 
 	respValues, err := url.ParseQuery(string(result))
 	if err != nil {
-		log.Print(err)
 		return "", err
 	}
 
 	if respValues.Get("Error") != "" {
 		err = errors.New(respValues.Get("Error"))
-		log.Print(err)
 		return "", err
 	}
 
@@ -127,7 +116,6 @@ func (f *FCMClient) SendSubscribeRequest() (*FCMSubscribeResponse, error) {
 
 	req, err := http.NewRequest("POST", FcmSubscribeUrl, strings.NewReader(values.Encode()))
 	if err != nil {
-		log.Print(err)
 		return nil, err
 	}
 
@@ -136,21 +124,18 @@ func (f *FCMClient) SendSubscribeRequest() (*FCMSubscribeResponse, error) {
 
 	resp, err := f.HttpClient.Do(req)
 	if err != nil {
-		log.Print(err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	result, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Print(err)
 		return nil, err
 	}
 
 	var response FCMSubscribeResponse
 	err = json.Unmarshal(result, &response)
 	if err != nil {
-		log.Print(err)
 		return nil, err
 	}
 

@@ -4,31 +4,32 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"github.com/golang/protobuf/proto"
-	"log"
-	"strconv"
 	"sync"
 	"time"
 )
 
 type FCMSocketHandler struct {
-	Socket                 *tls.Conn
-	HeartbeatInterval      time.Duration
-	IsAlive                bool
-	state                  int
-	data                   []byte
-	dataMutex              sync.Mutex
-	sizePacketSoFar        int
-	messageTag             int
-	messageSize            int
-	handshakeComplete      bool
-	isWaitingForData       bool
-	heartbeatContextCancel context.CancelFunc
-	onDataMutex            sync.Mutex
-	OnMessage              func(messageTag int, messageObject interface{}) error
+	Socket              *tls.Conn
+	HeartbeatInterval   time.Duration
+	IsAlive             bool
+	state               int
+	data                []byte
+	dataMutex           sync.Mutex
+	sizePacketSoFar     int
+	messageTag          int
+	messageSize         int
+	handshakeComplete   bool
+	isWaitingForData    bool
+	socketContext       context.Context
+	socketContextCancel context.CancelFunc
+	onDataMutex         sync.Mutex
+	OnMessage           func(messageTag int, messageObject interface{}) error
 }
 
 func (f *FCMSocketHandler) StartSocketHandler() {
+	f.socketContext, f.socketContextCancel = context.WithCancel(context.Background())
 	go f.readData()
 	go f.sendHeartbeatPings()
 }
@@ -37,8 +38,6 @@ func (f *FCMSocketHandler) sendHeartbeatPings() {
 	if f.HeartbeatInterval == 0 {
 		f.HeartbeatInterval = time.Minute * 10
 	}
-	var ctx context.Context
-	ctx, f.heartbeatContextCancel = context.WithCancel(context.Background())
 	for {
 		select {
 		case <-time.After(f.HeartbeatInterval):
@@ -46,7 +45,7 @@ func (f *FCMSocketHandler) sendHeartbeatPings() {
 			if err != nil {
 				return
 			}
-		case <-ctx.Done():
+		case <-f.socketContext.Done():
 			return
 		}
 
@@ -57,13 +56,13 @@ func (f *FCMSocketHandler) SendHeartbeatPing() error {
 	obj := &HeartbeatPing{}
 	data, err := proto.Marshal(obj)
 	if err != nil {
-		log.Println(err)
+		err = errors.New(fmt.Sprintf("failed to marshal a heartbeat ping packet: %s", err.Error()))
 		f.close()
 		return err
 	}
 	_, err = f.Socket.Write(append([]byte{KHeartbeatPingTag, byte(proto.Size(obj))}, data...))
 	if err != nil {
-		log.Println(err)
+		err = errors.New(fmt.Sprintf("failed to send a heartbeat ping: %s", err.Error()))
 		f.close()
 		return err
 	}
@@ -76,8 +75,8 @@ func (f *FCMSocketHandler) readData() {
 		buffer = make([]byte, 1)
 		_, err := f.Socket.Read(buffer)
 		if err != nil {
+			err = errors.New(fmt.Sprintf("failed to read from the FCM socket: %s", err.Error()))
 			f.close()
-			log.Println(err)
 			return
 		}
 		f.dataMutex.Lock()
@@ -88,6 +87,7 @@ func (f *FCMSocketHandler) readData() {
 }
 
 func (f *FCMSocketHandler) onData() error {
+	// Todo: make sure errors from onData are sent to the developer
 	f.onDataMutex.Lock()
 	defer f.onDataMutex.Unlock()
 
@@ -119,10 +119,10 @@ func (f *FCMSocketHandler) waitForData() error {
 		minBytesNeeded = f.messageSize
 		break
 	default:
-		err := errors.New(`Unexpected state: ` + strconv.Itoa(f.state))
-		log.Println(err)
+		err := errors.New(fmt.Sprintf("socket handler is in an unexpected state (%d)", f.state))
 		return err
 	}
+
 	f.dataMutex.Lock()
 	if len(f.data) < minBytesNeeded {
 		f.dataMutex.Unlock()
@@ -157,8 +157,7 @@ func (f *FCMSocketHandler) waitForData() error {
 		}
 		break
 	default:
-		err := errors.New(`Unexpected state: ` + strconv.Itoa(f.state))
-		log.Println(err)
+		err := errors.New(fmt.Sprintf("socket handler is in an unexpected state (%d)", f.state))
 		return err
 	}
 
@@ -172,8 +171,7 @@ func (f *FCMSocketHandler) onGotVersion() error {
 	f.dataMutex.Unlock()
 
 	if version < KMCSVersion && version != 38 {
-		err := errors.New("Got wrong version: " + strconv.Itoa(version))
-		log.Println(err)
+		err := errors.New(fmt.Sprintf("server returned wrong version (%d)", version))
 		return err
 	}
 
@@ -251,12 +249,12 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 	protobuf, err := f.buildProtobufFromTag(f.data[:f.messageSize])
 	f.dataMutex.Unlock()
 	if err != nil {
+		err = errors.New(fmt.Sprintf("failed to re-build protobuf packet from messageTag (%d): %s", f.messageTag, err.Error()))
 		return err
 	}
 	if protobuf == nil {
 		f.data = f.data[f.messageSize:]
-		err = errors.New("Unknown message tag " + strconv.Itoa(f.messageTag))
-		log.Println(err)
+		err = errors.New(fmt.Sprintf("unknown message tag(%d)", f.messageTag))
 		return err
 	}
 
@@ -292,7 +290,6 @@ func (f *FCMSocketHandler) onGotMessageBytes() error {
 
 	if f.messageTag == KLoginResponseTag {
 		if !f.handshakeComplete {
-			log.Println("Handshake complete")
 			f.handshakeComplete = true
 		}
 	}
@@ -383,7 +380,7 @@ func (f *FCMSocketHandler) Init() {
 }
 
 func (f *FCMSocketHandler) close() {
-	f.heartbeatContextCancel()
+	f.socketContextCancel()
 	if f.Socket != nil {
 		f.Socket.Close()
 	}

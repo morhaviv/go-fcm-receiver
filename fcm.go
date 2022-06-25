@@ -2,6 +2,8 @@ package go_fcm_receiver
 
 import (
 	"encoding/base64"
+	"errors"
+	"fmt"
 )
 
 func (f *FCMClient) RegisterFCM() error {
@@ -35,6 +37,7 @@ func (f *FCMClient) GetAuthSecretBase64() string {
 func (f *FCMClient) subscribeRequest() (string, error) {
 	subscribeResponse, err := f.SendSubscribeRequest()
 	if err != nil {
+		err = errors.New(fmt.Sprintf("failed to subscribe to the FCM sender: %s", err.Error()))
 		return "", err
 	}
 	return subscribeResponse.Token, nil

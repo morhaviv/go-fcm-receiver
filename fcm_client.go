@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"log"
 	"net"
 	"net/http"
 	"time"
@@ -67,6 +66,7 @@ func (f *FCMClient) connect() {
 		GetConfigForClient: func(c *tls.ClientHelloInfo) (*tls.Config, error) {
 			err := c.Conn.(*net.TCPConn).SetKeepAlive(true)
 			if err != nil {
+				err = errors.New(fmt.Sprintf("failed to enable a keep-alive on this OS: %s", err.Error()))
 				return nil, err
 			}
 			return nil, nil
@@ -118,8 +118,7 @@ func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
 				return err
 			}
 		} else {
-			err := errors.New("error casting message to DataMessageStanza")
-			log.Println(err)
+			err := errors.New("the received message is corrupted and couldn't be casted as DataMessageStanza")
 			return err
 		}
 	}
@@ -127,6 +126,7 @@ func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
 }
 
 func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
+	// Todo: make sure that errors before calling f.OnDataMessage are somehow sent to the developer
 	if StringsSliceContains(f.PersistentIds, *message.PersistentId) {
 		return nil
 	}
@@ -137,14 +137,14 @@ func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
 		if *data.Key == "crypto-key" {
 			cryptoKey, err = base64.URLEncoding.DecodeString((*data.Value)[3:])
 			if err != nil {
-				log.Println(err)
+				err = errors.New(fmt.Sprintf("failed to base64 decode the crypto-key received from the server: %s", err.Error()))
 				return err
 			}
 		}
 		if *data.Key == "encryption" {
 			encryption, err = base64.URLEncoding.DecodeString((*data.Value)[5:])
 			if err != nil {
-				log.Println(err)
+				err = errors.New(fmt.Sprintf("failed to base64 decode the encryption received from the server: %s", err.Error()))
 				return err
 			}
 		}
