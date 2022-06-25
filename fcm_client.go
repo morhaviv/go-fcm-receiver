@@ -7,45 +7,42 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/morhaviv/go-fcm-receiver/fcm_protos"
-	"github.com/morhaviv/go-fcm-receiver/generic"
-	"log"
 	"net"
 	"net/http"
+	"time"
 )
 
 // FCMClient structure
 type FCMClient struct {
-	IsAlive       bool
-	SenderId      int64
-	HttpClient    *http.Client
-	AppId         string
-	GcmToken      string
-	FcmToken      string
-	AndroidId     uint64
-	SecurityToken uint64
-	privateKey    *ecdsa.PrivateKey
-	publicKey     *ecdsa.PublicKey
-	authSecret    []byte
-	PersistentIds []string
-	Socket        FCMSocketHandler
-	OnDataMessage func(message []byte)
+	SenderId          int64
+	HttpClient        http.Client
+	appId             string
+	GcmToken          string
+	FcmToken          string
+	AndroidId         uint64
+	SecurityToken     uint64
+	privateKey        *ecdsa.PrivateKey
+	publicKey         *ecdsa.PublicKey
+	authSecret        []byte
+	PersistentIds     []string
+	HeartbeatInterval time.Duration
+	socket            FCMSocketHandler
+	OnDataMessage     func(message []byte)
 }
 
 func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) error {
-	// Todo: change variable names to comments...
 	privateKeyString, err := base64.StdEncoding.DecodeString(privateKeyBase64)
 	if err != nil {
-		log.Println(err)
+		err = errors.New(fmt.Sprintf("failed to base64 decode the private key: %s", err.Error()))
 		return err
 	}
-	privateKey, err := generic.DecodePrivateKey(privateKeyString)
+	privateKey, err := DecodePrivateKey(privateKeyString)
 	if err != nil {
 		return err
 	}
 	authSecretKeyString, err := base64.StdEncoding.DecodeString(authSecretBase64)
 	if err != nil {
-		log.Println(err)
+		err = errors.New(fmt.Sprintf("failed to base64 decode the auth secret key: %s", err.Error()))
 		return err
 	}
 	f.privateKey = privateKey
@@ -56,85 +53,94 @@ func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) e
 }
 
 func (f *FCMClient) CreateAppId() string {
-	f.AppId = fmt.Sprintf(generic.AppIdBase, uuid.New().String())
-	return f.AppId
+	f.appId = fmt.Sprintf(AppIdBase, uuid.New().String())
+	return f.appId
 }
 
-func (f *FCMClient) StartListening() {
-	f.connect()
+func (f *FCMClient) StartListening() error {
+	if f.AndroidId == 0 || f.SecurityToken == 0 {
+		err := errors.New("client's AndroidId and SecurityToken hasn't been set. use FCMClient.Register() to generate a new AndroidId and SecurityToken")
+		return err
+	}
+	if f.privateKey == nil || f.authSecret == nil {
+		err := errors.New("client's private key hasn't been set. use FCMClient.LoadKeys() or FCMClient.CreateNewKeys()")
+		return err
+	}
+	return f.connect()
 }
 
-func (f *FCMClient) connect() {
+func (f *FCMClient) connect() error {
 	tlsConfig := &tls.Config{
 		GetConfigForClient: func(c *tls.ClientHelloInfo) (*tls.Config, error) {
 			err := c.Conn.(*net.TCPConn).SetKeepAlive(true)
 			if err != nil {
+				err = errors.New(fmt.Sprintf("failed to enable a keep-alive on this OS: %s", err.Error()))
 				return nil, err
 			}
 			return nil, nil
 		},
 	}
 
-	socket, err := tls.Dial("tcp", generic.FcmSocketAddress, tlsConfig)
+	socket, err := tls.Dial("tcp", FcmSocketAddress, tlsConfig)
 	if err != nil {
-		log.Println(err)
-		return
+		err = errors.New(fmt.Sprintf("failed to connect to the FCM server: %s", err.Error()))
+		return err
 	}
-	f.IsAlive = true
 
-	f.Socket.Socket = socket
-	f.Socket.OnMessage = f.onMessage
-	f.Socket.OnClose = func() {
-		f.IsAlive = false
+	f.socket.IsAlive = true
+	f.socket.Socket = socket
+	f.socket.OnMessage = f.onMessage
+	f.socket.Init()
+
+	loginRequest, err := CreateLoginRequestRaw(&f.AndroidId, &f.SecurityToken, f.PersistentIds)
+	if err != nil {
+		err = errors.New(fmt.Sprintf("failed to create a login request packet: %s", err.Error()))
+		return err
 	}
-	f.Socket.Init()
 
-	fmt.Println("FCM Token:", f.FcmToken)
-	loginRequest := fcm_protos.CreateLoginRequestRaw(&f.AndroidId, &f.SecurityToken, "", f.PersistentIds)
 	err = f.startLoginHandshake(loginRequest)
 	if err != nil {
-		return
+		return err
 	}
-	f.Socket.StartSocketHandler()
+
+	return f.socket.StartSocketHandler()
 }
 
 func (f *FCMClient) startLoginHandshake(loginRequest []byte) error {
-	n, err := f.Socket.Socket.Write(loginRequest)
+	_, err := f.socket.Socket.Write(loginRequest)
 	if err != nil {
-		log.Println(n, err)
-		f.Socket.close()
-		f.IsAlive = false
+		err = errors.New(fmt.Sprintf("failed to send a handshake to the FCM server: %s", err.Error()))
+		f.socket.close(err)
 		return err
 	}
 	return nil
 }
 
 func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
-	if messageTag == generic.KLoginResponseTag {
+	if messageTag == KLoginResponseTag {
 		f.PersistentIds = nil
-	} else if messageTag == generic.KHeartbeatPingTag {
-		err := f.Socket.SendHeartbeatPing()
+	} else if messageTag == KHeartbeatPingTag {
+		err := f.socket.SendHeartbeatPing()
 		if err != nil {
 			return err
 		}
-	} else if messageTag == generic.KDataMessageStanzaTag {
-		dataMessage, ok := messageObject.(*fcm_protos.DataMessageStanza)
+	} else if messageTag == KDataMessageStanzaTag {
+		dataMessage, ok := messageObject.(*DataMessageStanza)
 		if ok {
 			err := f.onDataMessage(dataMessage)
 			if err != nil {
 				return err
 			}
 		} else {
-			err := errors.New("error casting message to DataMessageStanza")
-			log.Println(err)
+			err := errors.New("the received message is corrupted and couldn't be casted as DataMessageStanza")
 			return err
 		}
 	}
 	return nil
 }
 
-func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) error {
-	if generic.StringsSliceContains(f.PersistentIds, *message.PersistentId) {
+func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
+	if StringsSliceContains(f.PersistentIds, *message.PersistentId) {
 		return nil
 	}
 	var err error
@@ -144,20 +150,20 @@ func (f *FCMClient) onDataMessage(message *fcm_protos.DataMessageStanza) error {
 		if *data.Key == "crypto-key" {
 			cryptoKey, err = base64.URLEncoding.DecodeString((*data.Value)[3:])
 			if err != nil {
-				log.Println(err)
+				err = errors.New(fmt.Sprintf("failed to base64 decode the crypto-key received from the server: %s", err.Error()))
 				return err
 			}
 		}
 		if *data.Key == "encryption" {
 			encryption, err = base64.URLEncoding.DecodeString((*data.Value)[5:])
 			if err != nil {
-				log.Println(err)
+				err = errors.New(fmt.Sprintf("failed to base64 decode the encryption received from the server: %s", err.Error()))
 				return err
 			}
 		}
 	}
 	rawData := message.RawData
-	decryptedMessage, err := generic.DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
+	decryptedMessage, err := DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
 	if err != nil {
 		return err
 	}
