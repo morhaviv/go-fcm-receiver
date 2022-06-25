@@ -22,16 +22,18 @@ type FCMSocketHandler struct {
 	messageSize         int
 	handshakeComplete   bool
 	isWaitingForData    bool
+	errChan             chan error
 	socketContext       context.Context
 	socketContextCancel context.CancelFunc
 	onDataMutex         sync.Mutex
 	OnMessage           func(messageTag int, messageObject interface{}) error
 }
 
-func (f *FCMSocketHandler) StartSocketHandler() {
+func (f *FCMSocketHandler) StartSocketHandler() error {
 	f.socketContext, f.socketContextCancel = context.WithCancel(context.Background())
 	go f.readData()
 	go f.sendHeartbeatPings()
+	return <-f.errChan
 }
 
 func (f *FCMSocketHandler) sendHeartbeatPings() {
@@ -43,6 +45,7 @@ func (f *FCMSocketHandler) sendHeartbeatPings() {
 		case <-time.After(f.HeartbeatInterval):
 			err := f.SendHeartbeatPing()
 			if err != nil {
+				f.close(err)
 				return
 			}
 		case <-f.socketContext.Done():
@@ -57,13 +60,11 @@ func (f *FCMSocketHandler) SendHeartbeatPing() error {
 	data, err := proto.Marshal(obj)
 	if err != nil {
 		err = errors.New(fmt.Sprintf("failed to marshal a heartbeat ping packet: %s", err.Error()))
-		f.close()
 		return err
 	}
 	_, err = f.Socket.Write(append([]byte{KHeartbeatPingTag, byte(proto.Size(obj))}, data...))
 	if err != nil {
 		err = errors.New(fmt.Sprintf("failed to send a heartbeat ping: %s", err.Error()))
-		f.close()
 		return err
 	}
 	return nil
@@ -76,7 +77,12 @@ func (f *FCMSocketHandler) readData() {
 		_, err := f.Socket.Read(buffer)
 		if err != nil {
 			err = errors.New(fmt.Sprintf("failed to read from the FCM socket: %s", err.Error()))
-			f.close()
+			select {
+			case <-f.socketContext.Done():
+				return
+			default:
+				f.close(err)
+			}
 			return
 		}
 		f.dataMutex.Lock()
@@ -87,7 +93,6 @@ func (f *FCMSocketHandler) readData() {
 }
 
 func (f *FCMSocketHandler) onData() error {
-	// Todo: make sure errors from onData are sent to the developer
 	f.onDataMutex.Lock()
 	defer f.onDataMutex.Unlock()
 
@@ -95,7 +100,7 @@ func (f *FCMSocketHandler) onData() error {
 		f.isWaitingForData = false
 		err := f.waitForData()
 		if err != nil {
-			f.close()
+			f.close(err)
 			return err
 		}
 	}
@@ -379,11 +384,15 @@ func (f *FCMSocketHandler) Init() {
 	f.isWaitingForData = true
 }
 
-func (f *FCMSocketHandler) close() {
+func (f *FCMSocketHandler) close(err error) {
 	f.socketContextCancel()
 	if f.Socket != nil {
 		f.Socket.Close()
 	}
 	f.IsAlive = false
+	select {
+	case f.errChan <- err:
+	default:
+	}
 	f.Init()
 }

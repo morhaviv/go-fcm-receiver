@@ -55,7 +55,6 @@ func (f *FCMClient) SendCheckInRequest(requestBody *AndroidCheckinRequest) (*And
 }
 
 func (f *FCMClient) SendRegisterRequest() (string, error) {
-	// Todo: Move url.values generation to a different function (Like CheckInRequest)
 	values := url.Values{}
 	values.Add("app", "org.chromium.linux")
 	values.Add("X-subtype", f.AppId)
@@ -96,9 +95,7 @@ func (f *FCMClient) SendRegisterRequest() (string, error) {
 }
 
 func (f *FCMClient) SendSubscribeRequest() (*FCMSubscribeResponse, error) {
-	// Todo: Move url.values generation to a different function (Like CheckInRequest)
 	publicKey := base64.URLEncoding.EncodeToString(PubBytes(f.publicKey))
-
 	publicKey = strings.ReplaceAll(publicKey, "=", "")
 	publicKey = strings.ReplaceAll(publicKey, "+", "")
 	publicKey = strings.ReplaceAll(publicKey, "/", "")

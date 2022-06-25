@@ -57,11 +57,11 @@ func (f *FCMClient) CreateAppId() string {
 	return f.AppId
 }
 
-func (f *FCMClient) StartListening() {
-	f.connect()
+func (f *FCMClient) StartListening() error {
+	return f.connect()
 }
 
-func (f *FCMClient) connect() {
+func (f *FCMClient) connect() error {
 	tlsConfig := &tls.Config{
 		GetConfigForClient: func(c *tls.ClientHelloInfo) (*tls.Config, error) {
 			err := c.Conn.(*net.TCPConn).SetKeepAlive(true)
@@ -76,27 +76,33 @@ func (f *FCMClient) connect() {
 	socket, err := tls.Dial("tcp", FcmSocketAddress, tlsConfig)
 	if err != nil {
 		err = errors.New(fmt.Sprintf("failed to connect to the FCM server: %s", err.Error()))
-		return
+		return err
 	}
-	f.socket.IsAlive = true
 
+	f.socket.IsAlive = true
 	f.socket.Socket = socket
 	f.socket.OnMessage = f.onMessage
 	f.socket.Init()
 
-	loginRequest := CreateLoginRequestRaw(&f.AndroidId, &f.SecurityToken, "", f.PersistentIds)
+	loginRequest, err := CreateLoginRequestRaw(&f.AndroidId, &f.SecurityToken, f.PersistentIds)
+	if err != nil {
+		err = errors.New(fmt.Sprintf("failed to create a login request packet: %s", err.Error()))
+		return err
+	}
+
 	err = f.startLoginHandshake(loginRequest)
 	if err != nil {
-		return
+		return err
 	}
-	f.socket.StartSocketHandler()
+
+	return f.socket.StartSocketHandler()
 }
 
 func (f *FCMClient) startLoginHandshake(loginRequest []byte) error {
 	_, err := f.socket.Socket.Write(loginRequest)
 	if err != nil {
 		err = errors.New(fmt.Sprintf("failed to send a handshake to the FCM server: %s", err.Error()))
-		f.socket.close()
+		f.socket.close(err)
 		return err
 	}
 	return nil
@@ -126,7 +132,6 @@ func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
 }
 
 func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
-	// Todo: make sure that errors before calling f.OnDataMessage are somehow sent to the developer
 	if StringsSliceContains(f.PersistentIds, *message.PersistentId) {
 		return nil
 	}

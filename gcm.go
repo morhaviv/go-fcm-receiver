@@ -22,7 +22,7 @@ func (f *FCMClient) RegisterGCM() error {
 
 func (f *FCMClient) checkInRequest() error {
 	androidId := int64(f.AndroidId)
-	checkInRequest := CreateCheckInRequest(&androidId, &f.SecurityToken, "")
+	checkInRequest := CreateCheckInRequest(&androidId, &f.SecurityToken)
 	responsePb, err := f.SendCheckInRequest(checkInRequest)
 	if err != nil {
 		err = errors.New(fmt.Sprintf("failed to send GCM checkIn request: %s", err.Error()))
