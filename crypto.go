@@ -6,6 +6,8 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"github.com/xakep666/ecego"
 	"log"
 )
@@ -41,7 +43,7 @@ func CreateAuthSecret() ([]byte, error) {
 	authSecret := make([]byte, 16)
 	_, err := rand.Read(authSecret)
 	if err != nil {
-		log.Println(err)
+		err = errors.New(fmt.Sprintf("failed to create a random auth secret: %s", err.Error()))
 		return nil, err
 	}
 	return authSecret, nil
@@ -50,7 +52,7 @@ func CreateAuthSecret() ([]byte, error) {
 func CreatePrivateKeyP256() (*ecdsa.PrivateKey, error) {
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		log.Println(err)
+		err = errors.New(fmt.Sprintf("failed to create a private key: %s", err.Error()))
 		return nil, err
 	}
 	return privateKey, nil
@@ -59,7 +61,7 @@ func CreatePrivateKeyP256() (*ecdsa.PrivateKey, error) {
 func EncodePrivateKey(key *ecdsa.PrivateKey) ([]byte, error) {
 	derKey, err := x509.MarshalECPrivateKey(key)
 	if err != nil {
-		// Todo: add ERROR
+		err = errors.New(fmt.Sprintf("failed to encode the private key: %s", err.Error()))
 		return nil, err
 	}
 
@@ -69,7 +71,7 @@ func EncodePrivateKey(key *ecdsa.PrivateKey) ([]byte, error) {
 func DecodePrivateKey(key []byte) (*ecdsa.PrivateKey, error) {
 	privateKey, err := x509.ParseECPrivateKey(key)
 	if err != nil {
-		// Todo: add ERROR
+		err = errors.New(fmt.Sprintf("failed to decode the private key: %s", err.Error()))
 		return nil, err
 	}
 	return privateKey, nil
@@ -85,7 +87,7 @@ func DecryptMessage(cryptoKey []byte, encryption []byte, rawData []byte, authSec
 	}
 	message, err := engine.Decrypt(rawData, []byte{}, params)
 	if err != nil {
-		log.Println(err)
+		err = errors.New(fmt.Sprintf("failed to decrypt the message from the server: %s", err.Error()))
 		return nil, err
 	}
 	return message, nil

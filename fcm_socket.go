@@ -14,6 +14,7 @@ import (
 type FCMSocketHandler struct {
 	Socket                 *tls.Conn
 	HeartbeatInterval      time.Duration
+	IsAlive                bool
 	state                  int
 	data                   []byte
 	dataMutex              sync.Mutex
@@ -25,7 +26,6 @@ type FCMSocketHandler struct {
 	heartbeatContextCancel context.CancelFunc
 	onDataMutex            sync.Mutex
 	OnMessage              func(messageTag int, messageObject interface{}) error
-	OnClose                func()
 }
 
 func (f *FCMSocketHandler) StartSocketHandler() {
@@ -35,7 +35,7 @@ func (f *FCMSocketHandler) StartSocketHandler() {
 
 func (f *FCMSocketHandler) sendHeartbeatPings() {
 	if f.HeartbeatInterval == 0 {
-		f.HeartbeatInterval = time.Minute
+		f.HeartbeatInterval = time.Minute * 10
 	}
 	var ctx context.Context
 	ctx, f.heartbeatContextCancel = context.WithCancel(context.Background())
@@ -387,6 +387,6 @@ func (f *FCMSocketHandler) close() {
 	if f.Socket != nil {
 		f.Socket.Close()
 	}
-	f.OnClose()
+	f.IsAlive = false
 	f.Init()
 }

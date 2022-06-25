@@ -10,30 +10,31 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"time"
 )
 
 // FCMClient structure
 type FCMClient struct {
-	IsAlive       bool
-	SenderId      int64
-	HttpClient    *http.Client
-	AppId         string
-	GcmToken      string
-	FcmToken      string
-	AndroidId     uint64
-	SecurityToken uint64
-	privateKey    *ecdsa.PrivateKey
-	publicKey     *ecdsa.PublicKey
-	authSecret    []byte
-	PersistentIds []string
-	Socket        FCMSocketHandler
-	OnDataMessage func(message []byte)
+	SenderId          int64
+	HttpClient        http.Client
+	AppId             string
+	GcmToken          string
+	FcmToken          string
+	AndroidId         uint64
+	SecurityToken     uint64
+	privateKey        *ecdsa.PrivateKey
+	publicKey         *ecdsa.PublicKey
+	authSecret        []byte
+	PersistentIds     []string
+	HeartbeatInterval time.Duration
+	socket            FCMSocketHandler
+	OnDataMessage     func(message []byte)
 }
 
 func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) error {
 	privateKeyString, err := base64.StdEncoding.DecodeString(privateKeyBase64)
 	if err != nil {
-		log.Println(err)
+		err = errors.New(fmt.Sprintf("failed to base64 decode the private key: %s", err.Error()))
 		return err
 	}
 	privateKey, err := DecodePrivateKey(privateKeyString)
@@ -42,7 +43,7 @@ func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) e
 	}
 	authSecretKeyString, err := base64.StdEncoding.DecodeString(authSecretBase64)
 	if err != nil {
-		log.Println(err)
+		err = errors.New(fmt.Sprintf("failed to base64 decode the auth secret key: %s", err.Error()))
 		return err
 	}
 	f.privateKey = privateKey
@@ -74,33 +75,28 @@ func (f *FCMClient) connect() {
 
 	socket, err := tls.Dial("tcp", FcmSocketAddress, tlsConfig)
 	if err != nil {
-		log.Println(err)
+		err = errors.New(fmt.Sprintf("failed to connect to the FCM server: %s", err.Error()))
 		return
 	}
-	f.IsAlive = true
+	f.socket.IsAlive = true
 
-	f.Socket.Socket = socket
-	f.Socket.OnMessage = f.onMessage
-	f.Socket.OnClose = func() {
-		f.IsAlive = false
-	}
-	f.Socket.Init()
+	f.socket.Socket = socket
+	f.socket.OnMessage = f.onMessage
+	f.socket.Init()
 
-	fmt.Println("FCM Token:", f.FcmToken)
 	loginRequest := CreateLoginRequestRaw(&f.AndroidId, &f.SecurityToken, "", f.PersistentIds)
 	err = f.startLoginHandshake(loginRequest)
 	if err != nil {
 		return
 	}
-	f.Socket.StartSocketHandler()
+	f.socket.StartSocketHandler()
 }
 
 func (f *FCMClient) startLoginHandshake(loginRequest []byte) error {
-	n, err := f.Socket.Socket.Write(loginRequest)
+	_, err := f.socket.Socket.Write(loginRequest)
 	if err != nil {
-		log.Println(n, err)
-		f.Socket.close()
-		f.IsAlive = false
+		err = errors.New(fmt.Sprintf("failed to send a handshake to the FCM server: %s", err.Error()))
+		f.socket.close()
 		return err
 	}
 	return nil
@@ -110,7 +106,7 @@ func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
 	if messageTag == KLoginResponseTag {
 		f.PersistentIds = nil
 	} else if messageTag == KHeartbeatPingTag {
-		err := f.Socket.SendHeartbeatPing()
+		err := f.socket.SendHeartbeatPing()
 		if err != nil {
 			return err
 		}
