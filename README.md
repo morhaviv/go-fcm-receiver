@@ -21,7 +21,7 @@ import "github.com/morhaviv/go-fcm-receiver"
 
 ## Usage
 
-### Creating a new device and starting to listen
+### Creating a new device and listening
 ```Go
 package main
 
@@ -53,7 +53,7 @@ func main() {
 }
 ```
 
-### Starting to listen an old device
+### Listening an existing device
 ```Go
 package main
 
