@@ -10,7 +10,7 @@ option optimize_for = LITE_RUNTIME;
 
 package proto;
 
-import "android_checkin.fcm_protos";
+import "proto_android_checkin.proto";
 
 option go_package = "./";
 

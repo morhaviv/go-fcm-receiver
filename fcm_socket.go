@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/golang/protobuf/proto"
+	proto "google.golang.org/protobuf"
 	"sync"
 	"time"
 )

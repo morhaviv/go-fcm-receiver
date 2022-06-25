@@ -8,6 +8,7 @@
 syntax = "proto2";
 
 option optimize_for = LITE_RUNTIME;
+
 package proto;
 
 option go_package = "./";
@@ -74,7 +75,7 @@ message AndroidCheckinProto {
   // For devices running MCS on Chrome, build-specific characteristics
   // of the browser.  There are no hardware aspects (except for ChromeOS).
   // This will only be populated for Chrome builds/ChromeOS devices
-  optional proto.ChromeBuildProto chrome_build = 13;
+  optional ChromeBuildProto chrome_build = 13;
 
   // Note: Some of the Android specific optional fields were skipped to limit
   // the protobuf definition.
