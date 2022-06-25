@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	proto "google.golang.org/protobuf"
+	"github.com/golang/protobuf/proto"
 	"io"
 	"net/http"
 	"net/url"

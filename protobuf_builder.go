@@ -2,7 +2,7 @@ package go_fcm_receiver
 
 import (
 	"fmt"
-	proto "google.golang.org/protobuf"
+	"github.com/golang/protobuf/proto"
 	"strconv"
 )
 
