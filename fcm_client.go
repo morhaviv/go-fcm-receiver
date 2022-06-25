@@ -16,7 +16,7 @@ import (
 type FCMClient struct {
 	SenderId          int64
 	HttpClient        http.Client
-	AppId             string
+	appId             string
 	GcmToken          string
 	FcmToken          string
 	AndroidId         uint64
@@ -53,11 +53,19 @@ func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) e
 }
 
 func (f *FCMClient) CreateAppId() string {
-	f.AppId = fmt.Sprintf(AppIdBase, uuid.New().String())
-	return f.AppId
+	f.appId = fmt.Sprintf(AppIdBase, uuid.New().String())
+	return f.appId
 }
 
 func (f *FCMClient) StartListening() error {
+	if f.AndroidId == 0 || f.SecurityToken == 0 {
+		err := errors.New("client's AndroidId and SecurityToken hasn't been set. use FCMClient.Register() to generate a new AndroidId and SecurityToken")
+		return err
+	}
+	if f.privateKey == nil || f.authSecret == nil {
+		err := errors.New("client's private key hasn't been set. use FCMClient.LoadKeys() or FCMClient.CreateNewKeys()")
+		return err
+	}
 	return f.connect()
 }
 

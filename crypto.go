@@ -5,11 +5,9 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/xakep666/ecego"
-	"log"
 )
 
 func PubBytes(pub *ecdsa.PublicKey) []byte {
@@ -28,13 +26,6 @@ func CreateKeys() (*ecdsa.PrivateKey, *ecdsa.PublicKey, []byte, error) {
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	log.Println("Created a new auth secret key:", base64.StdEncoding.EncodeToString(authSecret))
-
-	privateKeyString, err := EncodePrivateKey(privateKey)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	log.Println("Created a new private key:", base64.StdEncoding.EncodeToString(privateKeyString))
 
 	return privateKey, &privateKey.PublicKey, authSecret, nil
 }

@@ -57,7 +57,7 @@ func (f *FCMClient) SendCheckInRequest(requestBody *AndroidCheckinRequest) (*And
 func (f *FCMClient) SendRegisterRequest() (string, error) {
 	values := url.Values{}
 	values.Add("app", "org.chromium.linux")
-	values.Add("X-subtype", f.AppId)
+	values.Add("X-subtype", f.appId)
 	values.Add("device", strconv.FormatUint(f.AndroidId, 10))
 	values.Add("sender", base64.RawURLEncoding.EncodeToString(FcmServerKey))
 

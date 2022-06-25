@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func (f *FCMClient) RegisterFCM() error {
+func (f *FCMClient) registerFCM() error {
 	privateKey, publicKey, authSecret, err := CreateKeys()
 	if err != nil {
 		return err

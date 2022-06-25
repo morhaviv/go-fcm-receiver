@@ -6,21 +6,7 @@ import (
 	"time"
 )
 
-func (f *FCMClient) RegisterGCM() error {
-	err := f.checkInRequest()
-	if err != nil {
-		return err
-	}
-
-	err = f.registerRequest()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (f *FCMClient) checkInRequest() error {
+func (f *FCMClient) checkInRequestGCM() error {
 	androidId := int64(f.AndroidId)
 	checkInRequest := CreateCheckInRequest(&androidId, &f.SecurityToken)
 	responsePb, err := f.SendCheckInRequest(checkInRequest)
@@ -35,7 +21,7 @@ func (f *FCMClient) checkInRequest() error {
 	return nil
 }
 
-func (f *FCMClient) registerRequest() error {
+func (f *FCMClient) registerRequestGCM() error {
 	// Server sometimes returns an error `(Error=PHONE_REGISTRATION_ERROR)` for no reason, so we're trying multiple times
 	token, err := f.SendRegisterRequest()
 	i := 0
