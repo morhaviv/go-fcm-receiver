@@ -33,6 +33,7 @@ func (f *FCMSocketHandler) StartSocketHandler() error {
 	f.socketContext, f.socketContextCancel = context.WithCancel(context.Background())
 	go f.readData()
 	go f.sendHeartbeatPings()
+	f.errChan = make(chan error)
 	return <-f.errChan
 }
 
