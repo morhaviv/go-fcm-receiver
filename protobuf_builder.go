@@ -24,6 +24,11 @@ func CreateLoginRequestRaw(androidId *uint64, securityToken *uint64, persistentI
 	useRmq2 := true
 	authService := LoginRequest_AuthService(2)
 	networkType := int32(1)
+
+	if len(persistentIds) > 2 {
+		persistentIds = persistentIds[len(persistentIds)-2:]
+	}
+
 	req := &LoginRequest{
 		Id:                   &chromeVersion,
 		Domain:               &domain,

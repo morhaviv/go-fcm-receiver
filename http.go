@@ -55,6 +55,9 @@ func (f *FCMClient) SendCheckInRequest(requestBody *AndroidCheckinRequest) (*And
 }
 
 func (f *FCMClient) SendRegisterRequest() (string, error) {
+	if f.appId == "" {
+		f.CreateAppId()
+	}
 	values := url.Values{}
 	values.Add("app", "org.chromium.linux")
 	values.Add("X-subtype", f.appId)

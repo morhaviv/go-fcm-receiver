@@ -7,13 +7,6 @@ import (
 )
 
 func (f *FCMClient) registerFCM() error {
-	privateKey, publicKey, authSecret, err := CreateKeys()
-	if err != nil {
-		return err
-	}
-	f.privateKey = privateKey
-	f.publicKey = publicKey
-	f.authSecret = authSecret
 	token, err := f.subscribeRequest()
 	if err != nil {
 		return err

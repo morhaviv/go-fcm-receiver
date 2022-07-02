@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -25,9 +26,22 @@ type FCMClient struct {
 	publicKey         *ecdsa.PublicKey
 	authSecret        []byte
 	PersistentIds     []string
+	persistentMutex   sync.Mutex
 	HeartbeatInterval time.Duration
 	socket            FCMSocketHandler
 	OnDataMessage     func(message []byte)
+}
+
+func (f *FCMClient) RemovePersistentId(id string) {
+	f.persistentMutex.Lock()
+	defer f.persistentMutex.Unlock()
+
+	for i, persistentId := range f.PersistentIds {
+		if persistentId == id {
+			f.PersistentIds = append(f.PersistentIds[:i], f.PersistentIds[i+1:]...)
+			return
+		}
+	}
 }
 
 func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) error {
@@ -90,6 +104,7 @@ func (f *FCMClient) connect() error {
 	f.socket.IsAlive = true
 	f.socket.Socket = socket
 	f.socket.OnMessage = f.onMessage
+	f.socket.HeartbeatInterval = f.HeartbeatInterval
 	f.socket.Init()
 
 	loginRequest, err := CreateLoginRequestRaw(&f.AndroidId, &f.SecurityToken, f.PersistentIds)
@@ -117,13 +132,15 @@ func (f *FCMClient) startLoginHandshake(loginRequest []byte) error {
 }
 
 func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
-	if messageTag == KLoginResponseTag {
-		f.PersistentIds = nil
-	} else if messageTag == KHeartbeatPingTag {
+	if messageTag == KHeartbeatPingTag {
 		err := f.socket.SendHeartbeatPing()
 		if err != nil {
 			return err
 		}
+	} else if messageTag == KCloseTag {
+		err := errors.New("server returned close tag")
+		f.socket.close(err)
+		return err
 	} else if messageTag == KDataMessageStanzaTag {
 		dataMessage, ok := messageObject.(*DataMessageStanza)
 		if ok {
@@ -140,7 +157,7 @@ func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
 }
 
 func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
-	if StringsSliceContains(f.PersistentIds, *message.PersistentId) {
+	if StringsSliceContains(f.PersistentIds, message.GetPersistentId()) {
 		return nil
 	}
 	var err error
@@ -162,12 +179,18 @@ func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
 			}
 		}
 	}
+
+	f.PersistentIds = append(f.PersistentIds, message.GetPersistentId())
+	go func(persistentId string) {
+		<-time.After(time.Duration(*message.Ttl) * time.Second)
+		f.RemovePersistentId(persistentId)
+	}(message.GetPersistentId())
+
 	rawData := message.RawData
 	decryptedMessage, err := DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
 	if err != nil {
 		return err
 	}
-	f.PersistentIds = append(f.PersistentIds, *message.PersistentId)
 	go f.OnDataMessage(decryptedMessage)
 	return nil
 }
