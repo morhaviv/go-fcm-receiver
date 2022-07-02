@@ -72,8 +72,13 @@ func main() {
 			fmt.Println("Received a message:", string(message))
 		},
 	}
-
-	err := oldDevice.StartListening()
+	
+	err := oldDevice.LoadKeys("<PRIVATE_KEY_BASE64>", "<AUTH_SECRET_BASE64>")
+	if err != nil {
+		panic(err)
+	}
+	
+	err = oldDevice.StartListening()
 	if err != nil {
 		panic(err)
 	}
