@@ -90,6 +90,7 @@ func (f *FCMClient) connect() error {
 	f.socket.IsAlive = true
 	f.socket.Socket = socket
 	f.socket.OnMessage = f.onMessage
+	f.socket.HeartbeatInterval = f.HeartbeatInterval
 	f.socket.Init()
 
 	loginRequest, err := CreateLoginRequestRaw(&f.AndroidId, &f.SecurityToken, f.PersistentIds)
@@ -124,6 +125,10 @@ func (f *FCMClient) onMessage(messageTag int, messageObject interface{}) error {
 		if err != nil {
 			return err
 		}
+	} else if messageTag == KCloseTag {
+		err := errors.New("server returned close tag")
+		f.socket.close(err)
+		return err
 	} else if messageTag == KDataMessageStanzaTag {
 		dataMessage, ok := messageObject.(*DataMessageStanza)
 		if ok {

@@ -7,6 +7,7 @@ import (
 )
 
 func CreateLoginRequestRaw(androidId *uint64, securityToken *uint64, persistentIds []string) ([]byte, error) {
+	// Todo: Fix persistentIds causes crash
 	chromeVersion := "chrome-63.0.3234.0"
 	domain := "mcs.android.com"
 
