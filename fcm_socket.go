@@ -172,6 +172,10 @@ func (f *FCMSocketHandler) waitForData() error {
 
 func (f *FCMSocketHandler) onGotVersion() error {
 	f.dataMutex.Lock()
+	if len(f.data) < 1 {
+		err := errors.New("version length is invalid")
+		return err
+	}
 	version := int(f.data[0])
 	f.data = f.data[1:]
 	f.dataMutex.Unlock()
