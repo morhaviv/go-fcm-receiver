@@ -194,3 +194,7 @@ func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
 	go f.OnDataMessage(decryptedMessage)
 	return nil
 }
+
+func (f *FCMClient) Close() {
+	f.socket.close(errors.New("close was manually called"))
+}
