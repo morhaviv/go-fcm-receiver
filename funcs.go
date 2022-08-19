@@ -1,6 +1,8 @@
 package go_fcm_receiver
 
-import "errors"
+import (
+	"errors"
+)
 
 func StringsSliceContains(s []string, e string) bool {
 	for _, a := range s {
