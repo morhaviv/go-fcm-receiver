@@ -7,7 +7,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/xakep666/ecego"
+	"github.com/morhaviv/ecego"
 )
 
 func PubBytes(pub *ecdsa.PublicKey) []byte {

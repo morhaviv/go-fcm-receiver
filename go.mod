@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
-	github.com/xakep666/ecego v0.1.1
+	github.com/morhaviv/ecego v1.0.0
 	google.golang.org/protobuf v1.28.0
 )
 
