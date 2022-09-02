@@ -74,8 +74,8 @@ func (f *FCMSocketHandler) SendHeartbeatPing() error {
 func (f *FCMSocketHandler) readData() {
 	for {
 		var buffer []byte
-		buffer = make([]byte, 1)
-		_, err := f.Socket.Read(buffer)
+		buffer = make([]byte, 1024*32)
+		n, err := f.Socket.Read(buffer)
 		if err != nil {
 			err = errors.New(fmt.Sprintf("failed to read from the FCM socket: %s", err.Error()))
 			select {
@@ -87,7 +87,7 @@ func (f *FCMSocketHandler) readData() {
 			return
 		}
 		f.dataMutex.Lock()
-		f.data = append(f.data, buffer...)
+		f.data = append(f.data[:n], buffer...)
 		f.dataMutex.Unlock()
 		go f.onData()
 	}
