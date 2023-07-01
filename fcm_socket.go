@@ -87,7 +87,7 @@ func (f *FCMSocketHandler) readData() {
 			return
 		}
 		f.dataMutex.Lock()
-		f.data = append(f.data[:n], buffer...)
+		f.data = append(f.data, buffer[:n]...)
 		f.dataMutex.Unlock()
 		go f.onData()
 	}
