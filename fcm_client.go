@@ -182,7 +182,11 @@ func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
 
 	f.PersistentIds = append(f.PersistentIds, message.GetPersistentId())
 	go func(persistentId string) {
-		<-time.After(time.Duration(*message.Ttl) * time.Second)
+		ttl := DefaultFcmMessageTtl
+		if message.Ttl != nil {
+			ttl = time.Duration(*message.Ttl) * time.Second
+		}
+		<-time.After(ttl)
 		f.RemovePersistentId(persistentId)
 	}(message.GetPersistentId())
 
