@@ -15,10 +15,10 @@ import (
 
 // FCMClient structure
 type FCMClient struct {
-	VapidKey          string //none?
-	ApiKey            string //found
-	AppId             string //found
-	ProjectID         string //found
+	VapidKey          string
+	ApiKey            string
+	AppId             string
+	ProjectID         string
 	HttpClient        http.Client
 	GcmToken          string
 	FcmToken          string
