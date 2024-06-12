@@ -5,7 +5,10 @@ import "time"
 const CheckInUrl = "https://android.clients.google.com/checkin"
 const RegisterUrl = "https://android.clients.google.com/c2dm/register3"
 
-const FcmSubscribeUrl = "https://fcm.googleapis.com/fcm/connect/subscribe"
+const FirebaseInstallationUrl = "https://firebaseinstallations.googleapis.com/v1/"
+const FcmRegistrationUrl = "https://fcmregistrations.googleapis.com/v1/"
+
+// const FcmSubscribeUrl = "https://fcm.googleapis.com/fcm/connect/subscribe"
 const FcmEndpointUrl = "https://fcm.googleapis.com/fcm/send"
 
 const AppIdBase = "wp:receiver.push.com#$%s"

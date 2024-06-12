@@ -7,7 +7,11 @@ import (
 )
 
 func (f *FCMClient) registerFCM() error {
-	token, err := f.subscribeRequest()
+	installationToken, err := f.installRequest()
+	if err != nil {
+		return err
+	}
+	token, err := f.registerRequest(installationToken)
 	if err != nil {
 		return err
 	}
@@ -27,11 +31,20 @@ func (f *FCMClient) GetAuthSecretBase64() string {
 	return base64.StdEncoding.EncodeToString(f.authSecret)
 }
 
-func (f *FCMClient) subscribeRequest() (string, error) {
-	subscribeResponse, err := f.SendSubscribeRequest()
+func (f *FCMClient) installRequest() (string, error) {
+	installResponse, err := f.SendFCMInstallRequest()
 	if err != nil {
-		err = errors.New(fmt.Sprintf("failed to subscribe to the FCM sender: %s", err.Error()))
+		err = errors.New(fmt.Sprintf("failed to install to the FCM: %s", err.Error()))
 		return "", err
 	}
-	return subscribeResponse.Token, nil
+	return installResponse.AuthToken.Token, nil
+}
+
+func (f *FCMClient) registerRequest(installationToken string) (string, error) {
+	registerResponse, err := f.SendFCMRegisterRequest(installationToken)
+	if err != nil {
+		err = errors.New(fmt.Sprintf("failed to register to the FCM sender: %s", err.Error()))
+		return "", err
+	}
+	return registerResponse.Token, nil
 }
