@@ -15,18 +15,13 @@ import (
 
 // FCMClient structure
 type FCMClient struct {
-	// Old required creds
-	//SenderId          int64
-	// New required creds
-	VapidKey  string //none?
-	ApiKey    string //found
-	AppId     string //found
-	ProjectID string //found
-	// General
-	HttpClient http.Client
-	GcmToken   string
-	FcmToken   string
-
+	VapidKey          string //none?
+	ApiKey            string //found
+	AppId             string //found
+	ProjectID         string //found
+	HttpClient        http.Client
+	GcmToken          string
+	FcmToken          string
 	AndroidId         uint64
 	SecurityToken     uint64
 	privateKey        *ecdsa.PrivateKey
