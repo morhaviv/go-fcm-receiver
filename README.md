@@ -10,6 +10,7 @@ The library was inspired by [push-receiver](https://www.npmjs.com/package/push-r
 - Other libraries (such as go-fcm) sends notifications via fcm, and does not receive notifications. Those libraries are an FCM server-side.  
 
 ## API Deprecation
+New version is now avaliable using the new FCM API! (as of June 2024)
 > [!CAUTION]
 > Breaking changes - Instead of creating an `FCMClient` object with a `SenderId`, you now must provide `AppId`, `ApiKey`, and a `ProjectID`. See the updated usage example below.
 > > Google deprecated https://fcm.googleapis.com/fcm/connect/subscribe (/send too), which is slated for full removal on June 21, 2024. (Source: https://firebase.google.com/docs/cloud-messaging/migrate-v1)
