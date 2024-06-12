@@ -2,7 +2,6 @@ package go_fcm_receiver
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -33,8 +32,8 @@ type FCMRegisterResponse struct {
 	PushSet string `json:"pushSet"`
 }
 
-// SendCheckInRequest GCM Checkin Request
-func (f *FCMClient) SendCheckInRequest(requestBody *AndroidCheckinRequest) (*AndroidCheckinResponse, error) {
+// SendGCMCheckInRequest GCM Checkin Request
+func (f *FCMClient) SendGCMCheckInRequest(requestBody *AndroidCheckinRequest) (*AndroidCheckinResponse, error) {
 	data, err := proto.Marshal(requestBody)
 	if err != nil {
 		return nil, err
@@ -70,14 +69,11 @@ func (f *FCMClient) SendCheckInRequest(requestBody *AndroidCheckinRequest) (*And
 	return &responsePb, nil
 }
 
-// SendRegisterRequest GCM Register Request
-func (f *FCMClient) SendRegisterRequest() (string, error) {
-	if f.appId == "" {
-		f.CreateAppId()
-	}
+// SendGCMRegisterRequest GCM Register Request
+func (f *FCMClient) SendGCMRegisterRequest() (string, error) {
 	values := url.Values{}
 	values.Add("app", "org.chromium.linux")
-	values.Add("X-subtype", f.appId)
+	values.Add("X-subtype", f.AppId)
 	values.Add("device", strconv.FormatUint(f.AndroidId, 10))
 	values.Add("sender", base64.RawURLEncoding.EncodeToString(FcmServerKey))
 
@@ -114,77 +110,9 @@ func (f *FCMClient) SendRegisterRequest() (string, error) {
 	return respValues.Get("token"), nil
 }
 
-// SendSubscribeRequest FCM Deprecated subscribe request
-//func (f *FCMClient) SendSubscribeRequest() (*FCMSubscribeResponse, error) {
-//	publicKey := base64.URLEncoding.EncodeToString(PubBytes(f.publicKey))
-//	publicKey = strings.ReplaceAll(publicKey, "=", "")
-//	publicKey = strings.ReplaceAll(publicKey, "+", "")
-//	publicKey = strings.ReplaceAll(publicKey, "/", "")
-//
-//	authSecret := base64.RawURLEncoding.EncodeToString(f.authSecret)
-//	authSecret = strings.ReplaceAll(authSecret, "=", "")
-//	authSecret = strings.ReplaceAll(authSecret, "+", "")
-//	authSecret = strings.ReplaceAll(authSecret, "/", "")
-//
-//	values := url.Values{}
-//	values.Add("authorized_entity", strconv.FormatInt(f.SenderId, 10))
-//	values.Add("endpoint", FcmEndpointUrl+"/"+f.GcmToken)
-//	values.Add("encryption_key", publicKey)
-//	values.Add("encryption_auth", authSecret)
-//
-//	req, err := http.NewRequest("POST", FcmSubscribeUrl, strings.NewReader(values.Encode()))
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-//	req.Header.Add("User-Agent", "")
-//
-//	resp, err := f.HttpClient.Do(req)
-//	if err != nil {
-//		return nil, err
-//	}
-//	defer resp.Body.Close()
-//
-//	result, err := io.ReadAll(resp.Body)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	var response FCMSubscribeResponse
-//	err = json.Unmarshal(result, &response)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return &response, nil
-//}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-const (
-	FIREBASE_INSTALLATION = "https://firebaseinstallations.googleapis.com/v1/"
-	FCM_REGISTRATION      = "https://fcmregistrations.googleapis.com/v1/"
-	FCM_ENDPOINT          = "https://fcm.googleapis.com/fcm/send"
-)
-
-func generateFirebaseFID() (string, error) {
-	// A valid FID has exactly 22 base64 characters, which is 132 bits, or 16.5
-	// bytes. Our implementation generates a 17 byte array instead.
-	fid := make([]byte, 17)
-	_, err := rand.Read(fid)
-	if err != nil {
-		return "", err
-	}
-
-	// Replace the first 4 random bits with the constant FID header of 0b0111.
-	fid[0] = 0b01110000 + (fid[0] % 0b00010000)
-
-	return base64.StdEncoding.EncodeToString(fid), nil
-}
-
+// SendFCMInstallRequest FCM Installation Request
 func (f *FCMClient) SendFCMInstallRequest() (*FCMInstallationResponse, error) {
-	fid, err := generateFirebaseFID()
+	fid, err := GenerateFirebaseFID()
 	if err != nil {
 		return nil, err
 	}
@@ -210,9 +138,7 @@ func (f *FCMClient) SendFCMInstallRequest() (*FCMInstallationResponse, error) {
 	}
 	clientInfoBase64 := base64.StdEncoding.EncodeToString(clientInfoBytes)
 
-	fmt.Println(string(bodyBytes))
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/installations", FIREBASE_INSTALLATION, f.ProjectID), bytes.NewBuffer(bodyBytes))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/installations", FirebaseInstallation, f.ProjectID), bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -224,15 +150,12 @@ func (f *FCMClient) SendFCMInstallRequest() (*FCMInstallationResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	defer resp.Body.Close()
+
 	result, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println(result)
-	fmt.Println(string(result))
 
 	var response FCMInstallationResponse
 	err = json.Unmarshal(result, &response)
@@ -243,6 +166,7 @@ func (f *FCMClient) SendFCMInstallRequest() (*FCMInstallationResponse, error) {
 	return &response, nil
 }
 
+// SendFCMRegisterRequest FCM Registration Request
 func (f *FCMClient) SendFCMRegisterRequest(installationAuthToken string) (*FCMRegisterResponse, error) {
 	publicKey := base64.URLEncoding.EncodeToString(PubBytes(f.publicKey))
 	publicKey = strings.ReplaceAll(publicKey, "=", "")
@@ -258,7 +182,7 @@ func (f *FCMClient) SendFCMRegisterRequest(installationAuthToken string) (*FCMRe
 		"web": map[string]string{
 			"applicationPubKey": f.VapidKey,
 			"auth":              authSecret,
-			"endpoint":          fmt.Sprintf("%s/%s", FCM_ENDPOINT, f.GcmToken),
+			"endpoint":          fmt.Sprintf("%s/%s", FcmEndpointUrl, f.GcmToken),
 			"p256dh":            publicKey,
 		},
 	}
@@ -267,7 +191,7 @@ func (f *FCMClient) SendFCMRegisterRequest(installationAuthToken string) (*FCMRe
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/registrations", FCM_REGISTRATION, f.ProjectID), bytes.NewBuffer(bodyBytes))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/registrations", FirebaseRegistrationUrl, f.ProjectID), bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -279,8 +203,8 @@ func (f *FCMClient) SendFCMRegisterRequest(installationAuthToken string) (*FCMRe
 	if err != nil {
 		return nil, err
 	}
-
 	defer resp.Body.Close()
+
 	result, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -293,5 +217,4 @@ func (f *FCMClient) SendFCMRegisterRequest(installationAuthToken string) (*FCMRe
 	}
 
 	return &response, nil
-
 }
