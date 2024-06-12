@@ -9,6 +9,11 @@ The library was inspired by [push-receiver](https://www.npmjs.com/package/push-r
 - This library receives FCM notifications the same way an Android device does. This library is an FCM client.
 - Other libraries (such as go-fcm) sends notifications via fcm, and does not receive notifications. Those libraries are an FCM server-side.  
 
+## API Deprecation
+> [!CAUTION]
+> Breaking changes - Instead of creating an `FCMClient` object with a `SenderId`, you now must provide `AppId`, `ApiKey`, and a `ProjectID`. See the updated usage example below.
+> > Google deprecated https://fcm.googleapis.com/fcm/connect/subscribe (/send too), which is slated for full removal on June 21, 2024. (Source: https://firebase.google.com/docs/cloud-messaging/migrate-v1)
+
 ## Install
 
 `
@@ -31,7 +36,9 @@ import (
 
 func main() {
 	newDevice := go_fcm_receiver.FCMClient{
-		SenderId:          845754665638,
+		ApiKey:    "<39_CHARACTERS_API_TOKEN>",
+		AppId:     "1:123445679012:android:0123456789abcdef",
+		ProjectID: "<PROJECT_ID>",
 		OnDataMessage: func(message []byte) {
 			fmt.Println("Received a message:", string(message))
 		},
@@ -63,7 +70,6 @@ import (
 
 func main() {
 	oldDevice := go_fcm_receiver.FCMClient{
-		SenderId:          845754665638, // Firebase Project ID
 		GcmToken:          "<GCM_TOKEN>",
 		FcmToken:          "<FCM_TOKEN>",
 		AndroidId:         5240887932061714513, // The androidId returned when the device was created

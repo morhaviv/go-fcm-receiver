@@ -2,11 +2,11 @@ package go_fcm_receiver
 
 import (
 	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"net"
 	"net/http"
 	"sync"
@@ -15,9 +15,11 @@ import (
 
 // FCMClient structure
 type FCMClient struct {
-	SenderId          int64
+	VapidKey          string //none?
+	ApiKey            string //found
+	AppId             string //found
+	ProjectID         string //found
 	HttpClient        http.Client
-	appId             string
 	GcmToken          string
 	FcmToken          string
 	AndroidId         uint64
@@ -44,6 +46,21 @@ func (f *FCMClient) RemovePersistentId(id string) {
 	}
 }
 
+func GenerateFirebaseFID() (string, error) {
+	// A valid FID has exactly 22 base64 characters, which is 132 bits, or 16.5
+	// bytes. Our implementation generates a 17 byte array instead.
+	fid := make([]byte, 17)
+	_, err := rand.Read(fid)
+	if err != nil {
+		return "", err
+	}
+
+	// Replace the first 4 random bits with the constant FID header of 0b0111.
+	fid[0] = 0b01110000 + (fid[0] % 0b00010000)
+
+	return base64.StdEncoding.EncodeToString(fid), nil
+}
+
 func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) error {
 	privateKeyString, err := base64.StdEncoding.DecodeString(privateKeyBase64)
 	if err != nil {
@@ -64,11 +81,6 @@ func (f *FCMClient) LoadKeys(privateKeyBase64 string, authSecretBase64 string) e
 	f.authSecret = authSecretKeyString
 
 	return nil
-}
-
-func (f *FCMClient) CreateAppId() string {
-	f.appId = fmt.Sprintf(AppIdBase, uuid.New().String())
-	return f.appId
 }
 
 func (f *FCMClient) StartListening() error {

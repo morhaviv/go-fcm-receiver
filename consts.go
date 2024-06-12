@@ -5,10 +5,9 @@ import "time"
 const CheckInUrl = "https://android.clients.google.com/checkin"
 const RegisterUrl = "https://android.clients.google.com/c2dm/register3"
 
-const FcmSubscribeUrl = "https://fcm.googleapis.com/fcm/connect/subscribe"
+const FirebaseInstallation = "https://firebaseinstallations.googleapis.com/v1/"
+const FirebaseRegistrationUrl = "https://fcmregistrations.googleapis.com/v1/"
 const FcmEndpointUrl = "https://fcm.googleapis.com/fcm/send"
-
-const AppIdBase = "wp:receiver.push.com#$%s"
 
 const FcmSocketAddress = "mtalk.google.com:5228"
 

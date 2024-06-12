@@ -7,6 +7,10 @@ import (
 
 // Register should be called only for a new device. returns the newly created FcmToken, GcmToken, AndroidId, SecurityToken, err
 func (f *FCMClient) Register() (string, string, uint64, uint64, error) {
+	if f.AppId == "" || f.ProjectID == "" || f.ApiKey == "" {
+		err := errors.New("FCMClient must receive an AppId, ProjectID, and ApiKey. read more at https://github.com/morhaviv/go-fcm-receiver/blob/main/README.md#api-deprecation")
+		return "", f.GcmToken, f.AndroidId, f.SecurityToken, err
+	}
 	if f.AndroidId == 0 || f.SecurityToken == 0 {
 		err := f.checkInRequestGCM()
 		if err != nil {
