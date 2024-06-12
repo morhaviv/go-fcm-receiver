@@ -190,7 +190,7 @@ func (f *FCMClient) SendFCMInstallRequest() (*FCMInstallationResponse, error) {
 	}
 
 	body := map[string]string{
-		"appId":       f.appId,
+		"appId":       f.AppId,
 		"authVersion": "FIS_v2",
 		"fid":         fid,
 		"sdkVersion":  "w:0.6.4",
@@ -209,6 +209,8 @@ func (f *FCMClient) SendFCMInstallRequest() (*FCMInstallationResponse, error) {
 		return nil, err
 	}
 	clientInfoBase64 := base64.StdEncoding.EncodeToString(clientInfoBytes)
+
+	fmt.Println(string(bodyBytes))
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%sprojects/%s/installations", FIREBASE_INSTALLATION, f.ProjectID), bytes.NewBuffer(bodyBytes))
 	if err != nil {
