@@ -32,7 +32,7 @@ type FCMClient struct {
 	HeartbeatInterval     time.Duration
 	socket                FCMSocketHandler
 	OnDataMessage         func(message []byte)
-	OnRawMessage          func(message []*AppData)
+	OnRawMessage          func(message *DataMessageStanza)
 	AndroidApp            *AndroidFCM
 	InstallationAuthToken *string
 }
@@ -40,7 +40,6 @@ type FCMClient struct {
 // AndroidFCM App
 type AndroidFCM struct {
 	GcmSenderId        string
-	GmsAppId           string
 	AndroidPackage     string
 	AndroidPackageCert string
 }
@@ -189,6 +188,7 @@ func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
 	isRaw := true
 
 	for _, data := range message.AppData {
+
 		if *data.Key == "crypto-key" {
 			isRaw = false
 			cryptoKey, err = base64.URLEncoding.DecodeString((*data.Value)[3:])
@@ -197,6 +197,7 @@ func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
 				return err
 			}
 		}
+
 		if *data.Key == "encryption" {
 			encryption, err = base64.URLEncoding.DecodeString((*data.Value)[5:])
 			if err != nil {
@@ -224,7 +225,7 @@ func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
 		}
 		go f.OnDataMessage(decryptedMessage)
 	} else {
-		go f.OnRawMessage(message.AppData)
+		go f.OnRawMessage(message)
 	}
 
 	return nil

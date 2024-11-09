@@ -34,6 +34,10 @@ func (f *FCMClient) registerRequestGCM() error {
 		err = errors.New(fmt.Sprintf("failed to send GCM register request: %s", err.Error()))
 		return err
 	}
-	f.GcmToken = token
+	if f.AndroidApp == nil {
+		f.GcmToken = token
+	} else {
+		f.FcmToken = token
+	}
 	return nil
 }

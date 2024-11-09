@@ -73,13 +73,13 @@ func (f *FCMClient) SendGCMCheckInRequest(requestBody *AndroidCheckinRequest) (*
 func (f *FCMClient) SendGCMRegisterRequest() (string, error) {
 	values := url.Values{}
 
-	values.Add("X-subtype", f.AppId)
-
 	if f.AndroidApp == nil || f.InstallationAuthToken == nil {
+		values.Add("X-subtype", f.AppId)
 		values.Add("app", "org.chromium.linux")
 		values.Add("device", strconv.FormatUint(f.AndroidId, 10))
 		values.Add("sender", base64.RawURLEncoding.EncodeToString(FcmServerKey))
 	} else {
+		values.Add("X-subtype", f.AndroidApp.GcmSenderId)
 		values.Add("device", strconv.FormatUint(f.AndroidId, 10))
 		values.Add("app", f.AndroidApp.AndroidPackage)
 		values.Add("cert", f.AndroidApp.AndroidPackageCert)
@@ -90,12 +90,12 @@ func (f *FCMClient) SendGCMRegisterRequest() (string, error) {
 		values.Add("X-gmsv", "220217001")
 		values.Add("X-scope", "*")
 		values.Add("X-Goog-Firebase-Installations-Auth", *f.InstallationAuthToken)
-		values.Add("X-gms_app_id", f.AndroidApp.GmsAppId)
+		values.Add("X-gms_app_id", f.AppId)
 		values.Add("X-Firebase-Client", "android-min-sdk/23 fire-core/20.0.0 device-name/a21snnxx device-brand/samsung device-model/a21s android-installer/com.android.vending fire-android/30 fire-installations/17.0.0 fire-fcm/22.0.0 android-platform/ kotlin/1.9.23 android-target-sdk/34")
 		values.Add("X-Firebase-Client-Log-Type", "1")
 		values.Add("X-app_ver_name", "1")
 		values.Add("target_ver", "31")
-		values.Add("sender", f.AppId)
+		values.Add("sender", f.AndroidApp.GcmSenderId)
 	}
 
 	req, err := http.NewRequest("POST", RegisterUrl, strings.NewReader(values.Encode()))

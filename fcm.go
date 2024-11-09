@@ -12,11 +12,13 @@ func (f *FCMClient) registerFCM() error {
 		return err
 	}
 	f.InstallationAuthToken = &installationToken
-	token, err := f.registerRequest()
-	if err != nil {
-		return err
+	if f.AndroidApp == nil {
+		token, err := f.registerRequest()
+		if err != nil {
+			return err
+		}
+		f.FcmToken = token
 	}
-	f.FcmToken = token
 	return nil
 }
 
