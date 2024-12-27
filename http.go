@@ -232,6 +232,7 @@ func (f *FCMClient) SendFCMRegisterRequest() (*FCMRegisterResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("x-goog-api-key", f.ApiKey)
 	req.Header.Set("x-goog-firebase-installations-auth", *f.InstallationAuthToken)
 	req.Header.Set("Content-Type", "application/json")
