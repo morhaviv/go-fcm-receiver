@@ -15,23 +15,33 @@ import (
 
 // FCMClient structure
 type FCMClient struct {
-	VapidKey          string
-	ApiKey            string
-	AppId             string
-	ProjectID         string
-	HttpClient        http.Client
-	GcmToken          string
-	FcmToken          string
-	AndroidId         uint64
-	SecurityToken     uint64
-	privateKey        *ecdsa.PrivateKey
-	publicKey         *ecdsa.PublicKey
-	authSecret        []byte
-	PersistentIds     []string
-	persistentMutex   sync.Mutex
-	HeartbeatInterval time.Duration
-	socket            FCMSocketHandler
-	OnDataMessage     func(message []byte)
+	VapidKey              string
+	ApiKey                string
+	AppId                 string
+	ProjectID             string
+	HttpClient            http.Client
+	GcmToken              string
+	FcmToken              string
+	AndroidId             uint64
+	SecurityToken         uint64
+	privateKey            *ecdsa.PrivateKey
+	publicKey             *ecdsa.PublicKey
+	authSecret            []byte
+	PersistentIds         []string
+	persistentMutex       sync.Mutex
+	HeartbeatInterval     time.Duration
+	socket                FCMSocketHandler
+	OnDataMessage         func(message []byte)
+	OnRawMessage          func(message *DataMessageStanza)
+	AndroidApp            *AndroidFCM
+	InstallationAuthToken *string
+}
+
+// AndroidFCM App
+type AndroidFCM struct {
+	GcmSenderId        string
+	AndroidPackage     string
+	AndroidPackageCert string
 }
 
 func (f *FCMClient) RemovePersistentId(id string) {
@@ -175,14 +185,19 @@ func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
 	var err error
 	var cryptoKey []byte
 	var encryption []byte
+	isRaw := true
+
 	for _, data := range message.AppData {
+
 		if *data.Key == "crypto-key" {
+			isRaw = false
 			cryptoKey, err = base64.URLEncoding.DecodeString((*data.Value)[3:])
 			if err != nil {
 				err = errors.New(fmt.Sprintf("failed to base64 decode the crypto-key received from the server: %s", err.Error()))
 				return err
 			}
 		}
+
 		if *data.Key == "encryption" {
 			encryption, err = base64.URLEncoding.DecodeString((*data.Value)[5:])
 			if err != nil {
@@ -202,12 +217,17 @@ func (f *FCMClient) onDataMessage(message *DataMessageStanza) error {
 		f.RemovePersistentId(persistentId)
 	}(message.GetPersistentId())
 
-	rawData := message.RawData
-	decryptedMessage, err := DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
-	if err != nil {
-		return err
+	if !isRaw {
+		rawData := message.RawData
+		decryptedMessage, err := DecryptMessage(cryptoKey, encryption, rawData, f.authSecret, f.privateKey)
+		if err != nil {
+			return err
+		}
+		go f.OnDataMessage(decryptedMessage)
+	} else {
+		go f.OnRawMessage(message)
 	}
-	go f.OnDataMessage(decryptedMessage)
+
 	return nil
 }
 

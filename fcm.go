@@ -11,11 +11,14 @@ func (f *FCMClient) registerFCM() error {
 	if err != nil {
 		return err
 	}
-	token, err := f.registerRequest(installationToken)
-	if err != nil {
-		return err
+	f.InstallationAuthToken = &installationToken
+	if f.AndroidApp == nil {
+		token, err := f.registerRequest()
+		if err != nil {
+			return err
+		}
+		f.FcmToken = token
 	}
-	f.FcmToken = token
 	return nil
 }
 
@@ -40,8 +43,8 @@ func (f *FCMClient) installRequest() (string, error) {
 	return installResponse.AuthToken.Token, nil
 }
 
-func (f *FCMClient) registerRequest(installationToken string) (string, error) {
-	registerResponse, err := f.SendFCMRegisterRequest(installationToken)
+func (f *FCMClient) registerRequest() (string, error) {
+	registerResponse, err := f.SendFCMRegisterRequest()
 	if err != nil {
 		err = errors.New(fmt.Sprintf("failed to register to the FCM sender: %s", err.Error()))
 		return "", err
